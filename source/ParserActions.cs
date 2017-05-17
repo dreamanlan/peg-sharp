@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq;
 
 internal sealed partial class Parser
@@ -28,7 +28,7 @@ internal sealed partial class Parser
 			if (m_grammar.Settings.Count > 1)
 				throw new ParserException("Included files should not have settings.");
 			else
-				Contract.Assert(m_grammar.Settings.ContainsKey("comment"));		// added by the Grammar ctor
+				Debug.Assert(m_grammar.Settings.ContainsKey("comment"));		// added by the Grammar ctor
 		}
 	}
 	
@@ -63,7 +63,7 @@ internal sealed partial class Parser
 	
 	private string DoAddSetting(List<Result> results)
 	{
-	    Contract.Requires(results != null);
+	    Debug.Assert(results != null);
 	    return DoAddSetting(results[0].Text.Trim(), results[2].Text.Trim());
 	}
 
@@ -102,7 +102,7 @@ internal sealed partial class Parser
 	
 	private void DoAddRule(List<Result> results)
 	{
-	    Contract.Requires(results != null);
+	    Debug.Assert(results != null);
 	    string pass = null;
 		if (results.Count >= 4)
 		{
@@ -152,7 +152,7 @@ internal sealed partial class Parser
 	
 	private string DoRange(string text, ref Expression value)
 	{
-	    Contract.Requires(text != null);
+	    Debug.Assert(text != null);
 	    string literal = text.Trim();
 		literal = literal.Substring(1, literal.Length - 2);
 		

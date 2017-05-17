@@ -21,20 +21,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 // Contains the settings and other variables used to evaluate template predicates.
 internal sealed class Context
 {
 	public void AddVariable(string name, object value)
 	{
-	    Contract.Requires(name != null);
+	    Debug.Assert(name != null);
 	    m_variables.Add(name, value);
 	}
 
     public void SetVariable(string name, object value)
     {
-        Contract.Requires(name != null);
+        Debug.Assert(name != null);
         m_variables[name] = value;
     }
 
@@ -45,14 +45,14 @@ internal sealed class Context
 	
 	public bool IsExcluded(string name)
 	{
-		Contract.Requires(name != null);
+		Debug.Assert(name != null);
 		
 		return m_excluded.Contains(name);
 	}
 	
 	public object Dereference(string name)
 	{
-	    Contract.Requires(name != null);
+	    Debug.Assert(name != null);
 	    object result;
 		if (m_variables.TryGetValue(name, out result))
 			return result;

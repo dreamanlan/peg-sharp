@@ -45,7 +45,7 @@ internal abstract class Expression
 	
 	public abstract Used FindUsed();
 	
-	public abstract void Write(StringBuilder line, int depth);
+	public abstract void Write(StringBuilder line, int depth, StringBuilder preallocedParseMethods, ref int pmIndex);
 	
 	public abstract IEnumerable<Expression> Select(Predicate<Expression> predicate);
 	

@@ -1,0 +1,71 @@
+start = Start
+using = RichTextParser
+debug = none
+value = ParserValue
+exclude-exception = true
+
+Start := Words EOF;
+
+Words := Word*  `value.TextValues = new List<IRichText>();foreach(var v in results)value.TextValues.Add(v.Value.TextValue);`
+	
+Word := String / HyperText;
+
+String := [^<]+ `value.TextValue = new NormalText{ Text = text };`
+	
+HyperText := "<" HyperTextNext1?  `if(results.Count>1 && null!=results[1].Value.TextValue){ value.TextValue = results[1].Value.TextValue; }else{ value.TextValue = new NormalText{ Text = "<" }; }`
+	
+HyperTextNext1 := HyperTextNext2 / DocType;
+
+HyperTextNext2 := Attrs HyperTextNext3  `var ht = results[1].Value.TextValue as HyperText;ht.Attrs.AddRange(results[0].Value.AttrValues);value.TextValue = ht;`
+
+DocType := "!" DocTypeNext1 `value.TextValue = results[1].Value.TextValue;`
+	
+DocTypeNext1 := DocTypeNext2 / CommentType;
+
+DocTypeNext2 := Attrs DocTypeEnd  `var uht = new UnusedHyperText();uht.Attrs.AddRange(results[0].Value.AttrValues);value.TextValue = uht;`
+	
+DocTypeEnd := ">" / "/>";
+
+CommentType := "--" CommentText "-->" `var uht = new UnusedHyperText{ Text = results[1].Value.StringValue };value.TextValue = uht;`
+
+CommentText := (!"-->".)* `value.StringValue = text;`
+
+HyperTextNext3 := ComplexHyperText / SimpleHyperText;
+
+ComplexHyperText := ">" Texts EndHyperText  `var ht = new HyperText();ht.Texts.AddRange(results[1].Value.TextValues);ht.EndTag = results[2].Value.StringValue;value.TextValue = ht;`
+
+SimpleHyperText := "/>" `var ht = new HyperText();value.TextValue = ht;`
+
+EndHyperText := "</" EndTagText ">"  `value.StringValue = results[1].Value.StringValue;`
+
+EndTagText := [^<>]+    `value.StringValue = text;`
+	
+Texts := Text*  `value.TextValues = new List<IRichText>();foreach(var v in results)value.TextValues.Add(v.Value.TextValue);`
+	
+Text := String / InnerHyperText / EscapeLeftTag;
+
+EscapeLeftTag := "<<" `value.TextValue = new NormalText{ Text = "<" };`
+	
+InnerHyperText := "<" HyperTextNext1  `value.TextValue = results[1].Value.TextValue;`
+	
+Attrs := Attr S* Attrs? `var hta = results[0].Value.AttrValue;var htas = new List<HyperTextAttr>();htas.Add(hta);if(results.Count>1 && null!=results[results.Count-1].Value.AttrValues){htas.AddRange(results[results.Count-1].Value.AttrValues);};value.AttrValues = htas;`
+	
+Attr :=	 S* Id S* EqualValue? `var hta = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = (results.Count>1 && null!=results[results.Count-1].Value.StringValue ? results[results.Count-1].Value.StringValue : string.Empty) };value.AttrValue = hta;`
+	
+EqualValue := "=" S* Value  `value.StringValue = results[results.Count-1].Value.StringValue;`
+		
+Id := NotStrId / Str1 / Str2 `value.StringValue = text;`
+	
+Value := NotStrVal / Str1 / Str2   `value.StringValue = text;`
+
+NotStrId := [_#@$%&a-zA-Z0-9.:] [^'"<>=\t\r\n /]*   `value.StringValue = text;`
+
+NotStrVal := ([_#@$%&a-zA-Z0-9+.:] / "-") [^'"<>=\t\r\n /]*   `value.StringValue = text;`
+
+Str1 := '"' [^"]* '"';
+
+Str2 := "'" [^']* "'";
+	
+S := [\r\n\t ];
+			
+EOF := !.;

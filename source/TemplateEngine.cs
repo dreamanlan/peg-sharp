@@ -22,7 +22,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -33,31 +33,31 @@ internal sealed class TemplateEngine
 {
 	public void AddVariable(string name, object value)
 	{
-	    Contract.Requires(name != null);
+	    Debug.Assert(name != null);
 	    m_context.AddVariable(name, value);
 	}
 
     public void AddReplacement(string name, string value)
     {
-        Contract.Requires(name != null);
+        Debug.Assert(name != null);
         m_replacements.Add(name, value);
     }
 
     public void SetVariable(string name, object value)
     {
-        Contract.Requires(name != null);
+        Debug.Assert(name != null);
         m_context.SetVariable(name, value);
     }
 
     public void SetReplacement(string name, string value)
     {
-        Contract.Requires(name != null);
+        Debug.Assert(name != null);
         m_replacements[name] = value;
     }
 
     public void AddExcluded(string name)
     {
-        Contract.Requires(name != null);
+        Debug.Assert(name != null);
         m_context.AddExcluded(name);
     }
 
@@ -109,7 +109,7 @@ internal sealed class TemplateEngine
 	//> name					end method marker
 	private void DoConditionalMethodInclusion(string[] input)
 	{
-	    Contract.Requires(input != null);
+	    Debug.Assert(input != null);
 	    int i = 0;
 		
 		// For every line in the input,
@@ -230,7 +230,7 @@ internal sealed class TemplateEngine
 	
 	private bool DoEvaluatePredicate(Group g)
 	{
-	    Contract.Requires(g != null);
+	    Debug.Assert(g != null);
 	    bool result = true;
 		
 		if (g.Success)
@@ -254,9 +254,9 @@ internal sealed class TemplateEngine
 	
 	private static Regex DoMakeRe(string format, params string[] args)
 	{
-	    Contract.Requires(format != null);
-	    Contract.Requires(args != null);
-	    Contract.Ensures(Contract.Result<Regex>() != null);
+	    Debug.Assert(format != null);
+	    Debug.Assert(args != null);
+	    //Contract.Ensures(Contract.Result<Regex>() != null);
 	    return new Regex(string.Format(format, args), RegexOptions.IgnorePatternWhitespace);
 	}
 

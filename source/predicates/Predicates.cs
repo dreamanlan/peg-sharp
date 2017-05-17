@@ -21,7 +21,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 //using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -31,7 +31,7 @@ internal sealed class AndPredicate : Predicate
 {
 	public AndPredicate(IEnumerable<Predicate> terms)
 	{
-		Contract.Requires(terms != null, "terms is null");
+		Debug.Assert(terms != null, "terms is null");
 		
 		Terms = terms.ToArray();
 	}
@@ -90,18 +90,18 @@ internal sealed class EqualsPredicate : Predicate
 {
 	public EqualsPredicate(Predicate lhs, Predicate rhs)
 	{
-		Contract.Requires(lhs != null, "lhs is null");
-		Contract.Requires(rhs != null, "rhs is null");
+		Debug.Assert(lhs != null, "lhs is null");
+		Debug.Assert(rhs != null, "rhs is null");
 		
 		Lhs = lhs;
 		Rhs = rhs;
 	}
 
-    [ContractInvariantMethod]
+    
     private void ObjectInvariant()
     {
-        Contract.Invariant(Lhs != null);
-        Contract.Invariant(Rhs != null);
+        Debug.Assert(Lhs != null);
+        Debug.Assert(Rhs != null);
     }
 	
 	public Predicate Lhs {get; }
@@ -124,7 +124,7 @@ internal sealed class ExcludedPredicate : Predicate
 {
 	public ExcludedPredicate(Predicate name)
 	{
-		Contract.Requires(name != null, "name is null");
+		Debug.Assert(name != null, "name is null");
 		
 		Name = name;
 	}
@@ -147,8 +147,8 @@ internal sealed class NotEqualsPredicate : Predicate
 {
 	public NotEqualsPredicate(Predicate lhs, Predicate rhs)
 	{
-		Contract.Requires(lhs != null, "lhs is null");
-		Contract.Requires(rhs != null, "rhs is null");
+		Debug.Assert(lhs != null, "lhs is null");
+		Debug.Assert(rhs != null, "rhs is null");
 		
 		Lhs = lhs;
 		Rhs = rhs;
@@ -174,7 +174,7 @@ internal sealed class NotPredicate : Predicate
 {
 	public NotPredicate(Predicate expression)
 	{
-		Contract.Requires(expression != null, "expression is null");
+		Debug.Assert(expression != null, "expression is null");
 		
 		Expression = expression;
 	}
@@ -196,7 +196,7 @@ internal sealed class OrPredicate : Predicate
 {
 	public OrPredicate(IEnumerable<Predicate> terms)
 	{
-		Contract.Requires(terms != null, "terms is null");
+		Debug.Assert(terms != null, "terms is null");
 		
 		Terms = terms.ToArray();
 	}
@@ -235,7 +235,7 @@ internal sealed class StringPredicate : Predicate
 {
 	public StringPredicate(string text)
 	{
-		Contract.Requires(text != null, "text is null");
+		Debug.Assert(text != null, "text is null");
 		
 		Text = text.Substring(1, text.Length - 2);	// lose the quotes
 	}
@@ -257,7 +257,7 @@ internal sealed class VariablePredicate : Predicate
 {
 	public VariablePredicate(string name)
 	{
-		Contract.Requires(name != null, "name is null");
+		Debug.Assert(name != null, "name is null");
 		
 		Name = name;
 	}

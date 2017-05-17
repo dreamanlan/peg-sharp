@@ -20,7 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 // Base class for predicate expressions within templates.
 internal abstract class Predicate
@@ -31,13 +31,13 @@ internal abstract class Predicate
 	
 	public object Evaluate(Context context)
 	{
-	    Contract.Requires(context != null);
+	    Debug.Assert(context != null);
 	    return OnEvaluate(context);
 	}
 
     public bool EvaluateBool(Context context)
 	{
-        Contract.Requires(context != null);
+        Debug.Assert(context != null);
         object result = OnEvaluate(context);
 		if (result is bool)
 			return (bool) result;
@@ -47,7 +47,7 @@ internal abstract class Predicate
 	
 	public string EvaluateString(Context context)
 	{
-	    Contract.Requires(context != null);
+	    Debug.Assert(context != null);
 	    object result = OnEvaluate(context);
 		if (result is string)
 			return (string) result;

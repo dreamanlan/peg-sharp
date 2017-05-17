@@ -4,4 +4,7 @@
     <StartArguments>ftest</StartArguments>
     <StartWorkingDirectory>C:\Documents and Settings\jjones\Documents\source\peg-sharp\</StartWorkingDirectory>
   </PropertyGroup>
+  <PropertyGroup>
+    <ProjectView>ShowAllFiles</ProjectView>
+  </PropertyGroup>
 </Project>

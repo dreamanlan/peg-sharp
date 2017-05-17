@@ -41,15 +41,17 @@ using System.Xml;									// {{value == 'XmlNode'}}
 	public PARSER()
 	{
 ADD-NON-TERMINALS
-											//  {{not excluded('OnCtorEpilog')}}
-		OnCtorEpilog();					//  {{not excluded('OnCtorEpilog')}}
+
+INIT-PREALLOC-FIELDS
+                                        //  {{not excluded('OnCtorEpilog')}}
+        OnCtorEpilog();					//  {{not excluded('OnCtorEpilog')}}
 	}
 	//> ParserCtor
 	
 	//< Parse
 	/* PARSE-ACCESSIBILITY */ RESULT Parse(string input)
 	{
-		return DoParseFile(input, null, "START-RULE");
+		return DoParseFile(input, null, (int)NonTerminalEnum.START-RULE);
 	}
 	//> Parse
 	
@@ -57,7 +59,7 @@ ADD-NON-TERMINALS
 	// File is used for error reporting.
 	/* PARSE-ACCESSIBILITY */ RESULT Parse(string input, string file)
 	{
-		return DoParseFile(input, file, "START-RULE");
+		return DoParseFile(input, file, (int)NonTerminalEnum.START-RULE);
 	}
 	//> Parse
 	
@@ -89,7 +91,7 @@ ADD-NON-TERMINALS
 	{
 		State temp = method(state, results);
 		
-		state = new State(state.Index, temp.Parsed, state.Errors);
+		state = new State(state.Index, temp.Parsed);
 		
 		return state;
 	}
@@ -126,8 +128,8 @@ ADD-NON-TERMINALS
 	//< DoChoice {{used-choice}}
 	private State DoChoice(State state, List<Result> results, params ParseMethod[] methods)
 	{
-		State start = state;
-		int startResult = results.Count;
+		int startIndex = state.Index;
+		int startResult = null == results ? 0 : results.Count;
 		
 		foreach (ParseMethod method in methods)
 		{
@@ -139,8 +141,9 @@ ADD-NON-TERMINALS
 			}
 			else
 			{
-				state = new State(start.Index, false, ErrorSet.Combine(state.Errors, temp.Errors));
-				results.RemoveRange(startResult, results.Count - startResult);
+				state = new State(startIndex, false);
+                if(null != results)
+                    results.RemoveRange(startResult, results.Count - startResult);
 			}
 		}
 		
@@ -318,53 +321,53 @@ ADD-NON-TERMINALS
 	{
 		State temp = method(state, results);
 		
-		state = new State(state.Index, !temp.Parsed, state.Errors);
+		state = new State(state.Index, !temp.Parsed);
 		
 		return state;
 	}
 	//> DoNAssert
 	
 	//< DoParse
-	private State DoParse(State state, List<Result> results, string nonterminal)
+	private State DoParse(State state, List<Result> results, int nonterminal)
 	{
-		State start = state;
+		int startIndex = state.Index;
 		
 		CacheValue cache;
-		CacheKey key = new CacheKey(nonterminal, start.Index, m_context);
-		if (!m_cache.TryGetValue(key, out cache))
-		{
-			ParseMethod[] methods = null;
-			if (!m_nonterminals.TryGetValue(nonterminal, out methods))
-				throw new Exception("Couldn't find a " + nonterminal + " parse method");
-			
-			int oldCount = results.Count;											// {{value != 'void'}}
+        long key = CacheValue.CalcKey(nonterminal, startIndex);
+        if (!m_cache.TryGetValue(key, out cache)) {
+            if (nonterminal < 0 || nonterminal >= (int)NonTerminalEnum.NonTerminalNum)
+                throw new Exception("Couldn't find a " + nonterminal + " parse method");
+
+            ParseMethod[] methods = m_nonterminals[(int)nonterminal];
+            int oldCount = null == results ? 0 : results.Count;									// {{value != 'void'}}
 			state = DoChoice(state, results, methods);
 			
-			bool hasResult = state.Parsed && results.Count > oldCount;		// {{value != 'void'}}
-			VALUE value = hasResult ? results[results.Count - 1].Value : default(VALUE);	// {{value != 'void'}}
-			cache = new CacheValue(state, value, hasResult);					// {{value != 'void'}}
-			cache = new CacheValue(state, state.Parsed);						// {{value == 'void'}}
+			bool hasResult = state.Parsed && null!= results && results.Count > oldCount;        // {{value != 'void'}}
+			VALUE value = hasResult ? results[results.Count - 1].Value : default(VALUE);	    // {{value != 'void'}}
+			cache = new CacheValue(ref state, ref value, hasResult);					        // {{value != 'void'}}
+			cache = new CacheValue(ref state, state.Parsed);						            // {{value == 'void'}}
 			m_cache.Add(key, cache);
 		}
 		else
 		{
-			Console.WriteLine(nonterminal);				// {{debug != 'none'}}
-			if (cache.HasResult)
-				results.Add(new Result(this, start.Index, cache.State.Index - start.Index, m_input, cache.Value));	// {{value != 'void'}}
-				results.Add(new Result(this, start.Index, cache.State.Index - start.Index, m_input));	// {{value == 'void'}}
+			Console.WriteLine(nonterminal);				                                        // {{debug != 'none'}}
+			if (cache.HasResult && null != results)
+                results.Add(new Result(this, startIndex, cache.State.Index - startIndex, m_input, cache.Value));    // {{value == 'XmlNode'}}
+                results.Add(new Result(this, startIndex, cache.State.Index - startIndex, m_input, ref cache.Value));    // {{value != 'void' and value != 'XmlNode'}}
+                results.Add(new Result(this, startIndex, cache.State.Index - startIndex, m_input));	// {{value == 'void'}}
 
 			string name = string.Format("cached '{0}' ", nonterminal);									// {{debug != 'none'}}
 			if (m_file == m_debugFile)																		// {{debugging and has-debug-file}}
 			{																										// {{debugging and has-debug-file}}
 				if (cache.State.Parsed)																			// {{(debug == 'matches' or debug == 'both') and has-debug-file}}
-					DoDebugMatch(start.Index, cache.State.Index, name + "parsed");					// {{(debug == 'matches' or debug == 'both') and has-debug-file}}
+					DoDebugMatch(startIndex, cache.State.Index, name + "parsed");					// {{(debug == 'matches' or debug == 'both') and has-debug-file}}
 				if (!cache.State.Parsed)																			// {{(debug == 'failures' or debug == 'both') and has-debug-file}}
-					DoDebugFailure(start.Index, name + DoEscapeAll(cache.State.Errors.ToString()));	// {{(debug == 'failures' or debug == 'both') and has-debug-file}}
+					DoDebugFailure(startIndex, name + DoEscapeAll(cache.State.Errors.ToString()));	// {{(debug == 'failures' or debug == 'both') and has-debug-file}}
 			}																										// {{debugging and has-debug-file}}
 			if (cache.State.Parsed)																				// {{(debug == 'matches' or debug == 'both') and not has-debug-file}}
-				DoDebugMatch(start.Index, cache.State.Index, name + "parsed");						// {{(debug == 'matches' or debug == 'both') and not has-debug-file}}
+				DoDebugMatch(startIndex, cache.State.Index, name + "parsed");						// {{(debug == 'matches' or debug == 'both') and not has-debug-file}}
 			if (!cache.State.Parsed)																				// {{(debug == 'failures' or debug == 'both') and not has-debug-file}}
-				DoDebugFailure(start.Index, name + DoEscapeAll(cache.State.Errors.ToString()));	// {{(debug == 'failures' or debug == 'both') and not has-debug-file}}
+				DoDebugFailure(startIndex, name + DoEscapeAll(cache.State.Errors.ToString()));	// {{(debug == 'failures' or debug == 'both') and not has-debug-file}}
 		}
 		
 		return cache.State;
@@ -372,42 +375,39 @@ ADD-NON-TERMINALS
 	//> DoParse
 	
 	//< DoParseFile
-	private RESULT DoParseFile(string input, string file, string rule)
+	private RESULT DoParseFile(string input, string file, int rule)
 	{
-		if (m_file == m_debugFile)					// {{debugging and has-debug-file}}
+		if (m_file == m_debugFile)					        // {{debugging and has-debug-file}}
 		{													// {{debugging and has-debug-file}}
-			Console.WriteLine(new string('-', 32));	// {{debugging and has-debug-file}}
-			if (!string.IsNullOrEmpty(file))			// {{debugging and has-debug-file}}
+			Console.WriteLine(new string('-', 32));	        // {{debugging and has-debug-file}}
+			if (!string.IsNullOrEmpty(file))			    // {{debugging and has-debug-file}}
 				Console.WriteLine(file);					// {{debugging and has-debug-file}}
 		}													// {{debugging and has-debug-file}}
-		Console.WriteLine(new string('-', 32));		// {{debugging and not has-debug-file}}
-		if (!string.IsNullOrEmpty(file))				// {{debugging and not has-debug-file}}
+		Console.WriteLine(new string('-', 32));		        // {{debugging and not has-debug-file}}
+		if (!string.IsNullOrEmpty(file))				    // {{debugging and not has-debug-file}}
 			Console.WriteLine(file);						// {{debugging and not has-debug-file}}
 															// {{debugging}}
-		m_doc = new XmlDocument();				// {{value == 'XmlNode'}}
+		m_doc = new XmlDocument();				            // {{value == 'XmlNode'}}
 		m_file = file;
-		m_input = m_file;				// we need to ensure that m_file is used or we will (in some cases) get a compiler warning
-		m_input = input + "\x0";		// add a sentinel so we can avoid range checks
+		m_input = m_file;				                    // we need to ensure that m_file is used or we will (in some cases) get a compiler warning
+		m_input = input + "\x0";		                    // add a sentinel so we can avoid range checks
 		m_cache.Clear();
 		m_lineStarts = null;
-		m_consumed = 0;								// {{unconsumed == 'expose'}}
+		m_consumed = 0;								        // {{unconsumed == 'expose'}}
 		
 		State state = new State(0, true);
 		List<Result> results = new List<Result>();
 		OnParseProlog();									// {{not excluded('OnParseProlog')}}
 		state = DoParse(state, results, rule);
 			
-		m_consumed = state.Index;					// {{unconsumed == 'expose'}}
-		int i = state.Index;								// {{unconsumed == 'error'}}
-		if (!state.Parsed)								// {{unconsumed == 'error'}}
-			DoThrow(state.Errors.Index, state.Errors.ToString());			// {{unconsumed == 'error'}}
-		else if (i < input.Length)						// {{unconsumed == 'error'}}
-			if (state.Errors.Expected.Length > 0)		// {{unconsumed == 'error'}}
-				DoThrow(state.Errors.Index, state.Errors.ToString());			// {{unconsumed == 'error'}}
-			else											// {{unconsumed == 'error'}}
-				DoThrow(state.Errors.Index, "Not all input was consumed starting from '" + input.Substring(i, Math.Min(16, input.Length - i)) + "'");			// {{unconsumed=='error'}}
-		
-		m_doc.AppendChild(results[0].Value);		// {{value == 'XmlNode'}}
+		m_consumed = state.Index;					        // {{unconsumed == 'expose'}}
+		int i = state.Index;                                // {{unconsumed == 'error'}}
+        if (!state.Parsed) {                                // {{unconsumed == 'error'}}
+            DoThrow(i, "Input syntax error !");             // {{unconsumed == 'error'}}
+        } else if (i < input.Length) {                      // {{unconsumed == 'error'}}
+            DoThrow(i, "Not all input was consumed starting from '" + input.Substring(i, Math.Min(16, input.Length - i)) + "'");           // {{unconsumed=='error'}}
+        }                                               // {{unconsumed=='error'}}
+        m_doc.AppendChild(results[0].Value);		    // {{value == 'XmlNode'}}
 		OnParseEpilog(state);							// {{not excluded('OnParseEpilog')}}
 		
 		return state.Index;								// {{value == 'void'}}
@@ -421,17 +421,19 @@ ADD-NON-TERMINALS
 	{
 		State result;
 		
-		if (string.Compare(m_input, state.Index, literal, 0, literal.Length, true) == 0)	// {{ignore-case}}
-		if (string.Compare(m_input, state.Index, literal, 0, literal.Length) == 0)			// {{not ignore-case}}
+		if (string.Compare(m_input, state.Index, literal, 0, literal.Length, true) == 0)	    // {{ignore-case}}
+		if (string.Compare(m_input, state.Index, literal, 0, literal.Length) == 0)  			// {{not ignore-case}}
 		{
-			results.Add(new Result(this, state.Index, literal.Length, m_input, DoCreateTextNode(literal, DoGetLine(state.Index), DoGetCol(state.Index))));	// {{value == 'XmlNode'}}
-			results.Add(new Result(this, state.Index, literal.Length, m_input));						// {{value == 'void'}}
-			results.Add(new Result(this, state.Index, literal.Length, m_input, default(VALUE)));	// {{value != 'void' and value != 'XmlNode'}}
-			result = new State(state.Index + literal.Length, true, state.Errors);
+            if (null != results) {
+                results.Add(new Result(this, state.Index, literal.Length, m_input, DoCreateTextNode(literal, DoGetLine(state.Index), DoGetCol(state.Index))));  // {{value == 'XmlNode'}}
+                results.Add(new Result(this, state.Index, literal.Length, m_input));                                // {{value == 'void'}}
+                results.Add(new Result(this, state.Index, literal.Length, m_input));                                // {{value != 'void' and value != 'XmlNode'}}
+            }
+			result = new State(state.Index + literal.Length, true);
 		}
 		else
 		{
-			result = new State(state.Index, false, ErrorSet.Combine(state.Errors, new ErrorSet(state.Index, literal)));
+			result = new State(state.Index, false);
 		}
 		
 		return result;
@@ -441,7 +443,7 @@ ADD-NON-TERMINALS
 	//< DoParseRange {{used-range}}
 	private State DoParseRange(State state, List<Result> results, bool inverted, string chars, string ranges, UnicodeCategory[] categories, string label)
 	{
-		char ch = char.ToLower(m_input[state.Index]);		// {{ignore-case}}
+		char ch = char.ToLower(m_input[state.Index]);		    // {{ignore-case}}
 		char ch = m_input[state.Index];							// {{not ignore-case}}
 		
 		bool matched = chars.IndexOf(ch) >= 0;
@@ -459,20 +461,22 @@ ADD-NON-TERMINALS
 		
 		if (matched)
 		{
-			results.Add(new Result(this, state.Index, 1, m_input, DoCreateTextNode(m_input.Substring(state.Index, 1), DoGetLine(state.Index), DoGetCol(state.Index)))); // {{value == 'XmlNode'}}
-			results.Add(new Result(this, state.Index, 1, m_input));							// {{value == 'void'}}
-			results.Add(new Result(this, state.Index, 1, m_input, default(VALUE)));		// {{value != 'void' and value != 'XmlNode'}}
-			return new State(state.Index + 1, true, state.Errors);
+            if (null != results) {
+                results.Add(new Result(this, state.Index, 1, m_input, DoCreateTextNode(m_input.Substring(state.Index, 1), DoGetLine(state.Index), DoGetCol(state.Index)))); // {{value == 'XmlNode'}}
+                results.Add(new Result(this, state.Index, 1, m_input));                         // {{value == 'void'}}
+                results.Add(new Result(this, state.Index, 1, m_input));                         // {{value != 'void' and value != 'XmlNode'}}
+            }
+			return new State(state.Index + 1, true);
 		}
 		
-		return new State(state.Index, false, ErrorSet.Combine(state.Errors, new ErrorSet(state.Index, label)));
+		return new State(state.Index, false);
 	}
 	//> DoParseRange
 	
 	//< DoRepetition {{used-repetition}}
 	private State DoRepetition(State state, List<Result> results, int min, int max, ParseMethod method)
 	{
-		State start = state;
+		int startIndex = state.Index;
 		
 		int count = 0;
 		while (count <= max)
@@ -485,14 +489,16 @@ ADD-NON-TERMINALS
 			}
 			else
 			{
-				state = new State(state.Index, true, ErrorSet.Combine(state.Errors, temp.Errors));
+                if (count >= min && count <= max) {
+                    state = new State(state.Index, true);
+                }
 				break;
 			}
 		}
-		
-		if (count < min || count > max)
-			state = new State(start.Index, false, ErrorSet.Combine(start.Errors, state.Errors));
-		
+
+        if (count < min || count > max) {
+            state = new State(startIndex, false);
+        }
 		return state;
 	}
 	//> DoRepetition
@@ -500,8 +506,8 @@ ADD-NON-TERMINALS
 	//< DoSequence {{used-sequence}}
 	private State DoSequence(State state, List<Result> results, params ParseMethod[] methods)
 	{
-		State start = state;
-		int startResult = results.Count;
+		int startIndex = state.Index;
+		int startResult = null == results ? 0 :results.Count;
 		
 		foreach (ParseMethod method in methods)
 		{
@@ -512,9 +518,10 @@ ADD-NON-TERMINALS
 			}
 			else
 			{
-				state = new State(start.Index, false, ErrorSet.Combine(start.Errors, temp.Errors));
-				results.RemoveRange(startResult, results.Count - startResult);
-				break;
+				state = new State(startIndex, false);
+                if(null != results)
+                    results.RemoveRange(startResult, results.Count - startResult);
+                break;
 			}
 		}
 		
@@ -535,80 +542,14 @@ ADD-NON-TERMINALS
 		else
 			throw new ParserException(line, col, index, m_file, m_input, DoEscapeAll(format));
 	}
-	//> DoThrow
-	#endregion
-	
-	#region Private Types
-	//< CacheKey
-	private struct CacheKey : IEquatable<CacheKey>
+    //> DoThrow
+    #endregion
+
+    #region Private Types
+    //< CacheValue
+    private struct CacheValue
 	{
-		public CacheKey(string rule, int index, object context)
-		{
-			m_rule = rule;
-			m_index = index;
-			m_context = context;
-		}
-		
-		public override bool Equals(object obj)
-		{
-			if (obj == null)
-				return false;
-			
-			if (GetType() != obj.GetType())
-				return false;
-			
-			CacheKey rhs = (CacheKey) obj;
-			return this == rhs;
-		}
-		
-		public bool Equals(CacheKey rhs)
-		{
-			return this == rhs;
-		}
-		
-		public static bool operator==(CacheKey lhs, CacheKey rhs)
-		{
-			if (lhs.m_rule != rhs.m_rule)
-				return false;
-			
-			if (lhs.m_index != rhs.m_index)
-				return false;
-			
-			if (lhs.m_context != rhs.m_context)
-				return false;
-			
-			return true;
-		}
-		
-		public static bool operator!=(CacheKey lhs, CacheKey rhs)
-		{
-			return !(lhs == rhs);
-		}
-		
-		public override int GetHashCode()
-		{
-			int hash = 0;
-			
-			unchecked
-			{
-				hash += m_rule.GetHashCode();
-				hash += m_index.GetHashCode();
-				hash += m_context.GetHashCode();
-			}
-			
-			return hash;
-		}
-		
-		private string m_rule;
-		private int m_index;
-		private object m_context;
-	}
-	//> CacheKey
-	
-	//< CacheValue
-	private struct CacheValue
-	{
-		public CacheValue(State state/*, VALUE value {{value != 'void'}}*/, bool hasResult)	
+		public CacheValue(ref State state/*, ref VALUE value {{value != 'void'}}*/, bool hasResult)	
 		{
 			State = state;
 			Value = value;				// {{value != 'void'}}
@@ -618,68 +559,18 @@ ADD-NON-TERMINALS
 		public State State;
 		public VALUE Value;			// {{value != 'void'}}
 		public bool HasResult;
-	}
+
+        public static long CalcKey(int rule, int index)
+        {
+            long v1 = rule;
+            long v2 = index;
+            return (v1 << 32) + v2;
+        }
+    }
 	//> CacheValue
 	
 	private delegate State ParseMethod(State state, List<Result> results);
-	
-	//< ErrorSet
-	// These are either an error that caused parsing to fail or the reason a
-	// successful parse stopped.
-	private struct ErrorSet
-	{
-		public ErrorSet(int index, string expected)
-		{
-			Index = index;
-			Expected = new string[]{expected};
-		}
 		
-		public ErrorSet(int index, string[] expected)
-		{
-			Index = index;
-			Expected = expected;
-		}
-		
-		// The location associated with the errors. For a failed parse this will be the
-		// same as State.Index. For a successful parse it will be State.Index or later.
-		public int Index;
-		
-		// This will be the name of something which was expected, but not found.
-		public string[] Expected;
-		
-		public static ErrorSet Combine(ErrorSet lhs, ErrorSet rhs)
-		{
-			if (lhs.Index > rhs.Index)
-			{
-				return lhs;
-			}
-			else if (lhs.Index < rhs.Index)
-			{
-				return rhs;
-			}
-			else
-			{
-				List<string> errors = new List<string>(lhs.Expected.Length + rhs.Expected.Length);
-				errors.AddRange(lhs.Expected);
-				foreach (string err in rhs.Expected)
-				{
-					if (errors.IndexOf(err) < 0)
-						errors.Add(err);
-				}
-				return new ErrorSet(lhs.Index, errors.ToArray());
-			}
-		}
-		
-		public override string ToString()
-		{
-			if (Expected.Length > 0)
-				return string.Format("Expected {0}", string.Join(" or ", Expected));
-			else
-				return "<none>";
-		}
-	}
-	//> ErrorSet
-	
 	//< State
 	// The state of the parser.
 	private struct State
@@ -688,14 +579,6 @@ ADD-NON-TERMINALS
 		{
 			Index = index;
 			Parsed = parsed;
-			Errors = new ErrorSet(index, new string[0]);
-		}
-		
-		public State(int index, bool parsed, ErrorSet errors)
-		{
-			Index = index;
-			Parsed = parsed;
-			Errors = errors;
 		}
 		
 		// Index of the first unconsumed character.
@@ -703,10 +586,6 @@ ADD-NON-TERMINALS
 		
 		// True if the expression associated with the state successfully parsed.
 		public bool Parsed;
-		
-		// If Parsed is false then this will explain why. If Parsed is true it will
-		// say why the parse stopped.
-		public ErrorSet Errors;
 	}
 	//> State
 	
@@ -714,8 +593,18 @@ ADD-NON-TERMINALS
 	// The result of parsing a literal or non-terminal.
 	private struct Result
 	{
-		public Result(PARSER parser, int index, int length, string input/*, VALUE value {{value != 'void'}}*/)
-		{
+        public Result(PARSER parser, int index, int length, string input)
+        {
+            m_parser = parser;
+            m_index = index;
+            m_length = length;
+            m_input = input;
+            Value = default(VALUE);	// {{value != 'void'}}
+        }
+
+        public Result(PARSER parser, int index, int length, string input, VALUE value) // {{value == 'XmlNode'}}
+        public Result(PARSER parser, int index, int length, string input, ref VALUE value) // {{value != 'void' and value != 'XmlNode'}}
+        {
 			m_parser = parser;
 			m_index = index;
 			m_length = length;
@@ -744,16 +633,25 @@ ADD-NON-TERMINALS
 		private int m_length;
 		private string m_input;
 	}
-	//> Result
-	#endregion
-	
-	#region Fields
-	private string m_input;
+    //> Result
+    #endregion
+
+    #region Fields
+    //< NonTerminalEnum
+    private enum NonTerminalEnum
+    {
+DEF-NON-TERMINALS-ENUM
+        NonTerminalNum
+    }
+    //> NonTerminalEnum
+
+DEF-PREALLOC-FIELDS
+
+    private string m_input;
 	private string m_file;
-	private object m_context = 0;
-	private Dictionary<string, ParseMethod[]> m_nonterminals = new Dictionary<string, ParseMethod[]>();
-	private Dictionary<CacheKey, CacheValue> m_cache = new Dictionary<CacheKey, CacheValue>();
-	private int m_consumed;								// {{unconsumed == 'expose'}}
+    private ParseMethod[][] m_nonterminals = new ParseMethod[(int)NonTerminalEnum.NonTerminalNum][];
+    private Dictionary<long, CacheValue> m_cache = new Dictionary<long, CacheValue>();
+    private int m_consumed;								// {{unconsumed == 'expose'}}
 	private string m_debugFile /*= DEBUG-FILE*/;		// {{debugging and has-debug-file}}
 	private XmlDocument m_doc;							// {{value == 'XmlNode'}}
 	private List<int> m_lineStarts;		// offsets at which each line starts

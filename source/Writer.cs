@@ -22,7 +22,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -64,10 +64,10 @@ internal sealed partial class Writer : IDisposable
 		DoSetUsed();
 	}
 
-    [ContractInvariantMethod]
+    
     private void ObjectInvariant()
     {
-        Contract.Invariant(m_grammar != null);
+        Debug.Assert(m_grammar != null);
     }
 
     public void Write(string pegFile)
@@ -94,8 +94,8 @@ internal sealed partial class Writer : IDisposable
 	#region Private Methods
 	private string DoGetNonterminalMethodName(List<Rule> rules, int i)
 	{
-	    Contract.Requires(rules != null);
-        Contract.Requires(i >= 0);
+	    Debug.Assert(rules != null);
+        Debug.Assert(i >= 0);
         var line = new StringBuilder();
 		
 		line.Append("DoParse");
@@ -112,12 +112,15 @@ internal sealed partial class Writer : IDisposable
 	{
 		int count = 0;
 		var nonterminals = new StringBuilder();
-		foreach (var entry in m_rules)
+        var preallocInit = new StringBuilder();
+        var pmIndex = 0;
+        var preallocFields = new StringBuilder();
+        foreach (var entry in m_rules)
 		{
 			for (int i = 0; i < entry.Value.Count; ++i)
 			{
 				string name = DoGetNonterminalMethodName(entry.Value, i);
-				nonterminals.Append(DoCreateNonTerminal(name, entry.Value[i], i, entry.Value.Count));
+				nonterminals.Append(DoCreateNonTerminal(name, entry.Value[i], i, entry.Value.Count, preallocInit, ref pmIndex));
 				
 				if (i + 1 < entry.Value.Count)
 					nonterminals.AppendLine();
@@ -126,17 +129,21 @@ internal sealed partial class Writer : IDisposable
 			if (++count < m_rules.Count)
 				nonterminals.AppendLine();
 		}
-		
+		for(int i = 1; i <= pmIndex; ++i) {
+            preallocFields.AppendFormat("\tprivate ParseMethod m_ParseMethod{0};", i);
+            preallocFields.AppendLine();
+        }
 		m_engine.AddReplacement("NON-TERMINALS", nonterminals.ToString());
-		
-		string parser = m_engine.Process("Code.cs");
+        m_engine.AddReplacement("INIT-PREALLOC-FIELDS", preallocInit.ToString());
+        m_engine.AddReplacement("DEF-PREALLOC-FIELDS", preallocFields.ToString());
+        string parser = m_engine.Process("Code.cs");
 		
 		return parser;
 	}
 	
 	private string DoGetCode(string indent, string code)
 	{
-	    Contract.Requires(code != null);
+	    Debug.Assert(code != null);
 	    string trailer = string.Empty;
 		if (code[code.Length - 1] != ';' && code[code.Length - 1] != '{' && code[code.Length - 1] != '}')
 			trailer = ";";
@@ -145,7 +152,7 @@ internal sealed partial class Writer : IDisposable
 	
 	private string DoGetHook(Rule rule, Hook hook)
 	{
-	    Contract.Requires(rule != null);
+	    Debug.Assert(rule != null);
 	    var builder = new StringBuilder();
 		
 		List<string> code = rule.GetHook(hook);
@@ -164,9 +171,9 @@ internal sealed partial class Writer : IDisposable
 		return result.TrimEnd();
 	}
 	
-	private string DoCreateNonTerminal(string methodName, Rule rule, int i, int maxIndex)
+	private string DoCreateNonTerminal(string methodName, Rule rule, int i, int maxIndex, StringBuilder preallocInit, ref int pmIndex)
 	{
-	    Contract.Requires(rule != null);
+	    Debug.Assert(rule != null);
 	    string prolog = DoGetHook(rule, Hook.Prolog);
 		string epilog = DoGetHook(rule, Hook.Epilog);
 		string failEpilog = DoGetHook(rule, Hook.FailEpilog);
@@ -179,7 +186,8 @@ internal sealed partial class Writer : IDisposable
 		m_engine.SetVariable("has-pass-action", rule.PassAction != null);
 		m_engine.SetVariable("has-pass-epilog", passEpilog.Length > 0);
 		m_engine.SetVariable("has-prolog", prolog.Length > 0);
-		m_engine.SetVariable("pass-action-uses-fatal", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "fatal"));
+        m_engine.SetVariable("pass-action-uses-results", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "results"));
+        m_engine.SetVariable("pass-action-uses-fatal", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "fatal"));
 		m_engine.SetVariable("pass-action-uses-text", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "text"));
 		m_engine.SetVariable("pass-epilog-uses-fail", passEpilog.Length > 0 && DoReferencesLocal(passEpilog, "fail"));
 		m_engine.SetVariable("prolog-uses-fail", prolog.Length > 0 && DoReferencesLocal(prolog, "fail"));
@@ -190,10 +198,10 @@ internal sealed partial class Writer : IDisposable
 		string debugName = rule.Name;
 		if (maxIndex > 1)
 			debugName += i + 1;
-		
+
 		var body = new StringBuilder();
 		body.Append("\t");
-		rule.Expression.Write(body, 0);
+		rule.Expression.Write(body, 0, preallocInit, ref pmIndex);
 		body.Append(";");
 		
 		m_engine.SetReplacement("DEBUG-NAME", debugName);
@@ -219,7 +227,7 @@ internal sealed partial class Writer : IDisposable
 	// enormous grammars.
 	private bool DoReferencesLocal(string text, string local)
 	{
-	    Contract.Requires(text != null);
+	    Debug.Assert(text != null);
 	    if (text.Contains(local + " "))
 			return true;
 			
@@ -305,9 +313,9 @@ internal sealed partial class Writer : IDisposable
 		var add = new StringBuilder();
 		foreach (var entry in m_rules)
 		{
-			add.Append("\t\tm_nonterminals.Add(\"");
+			add.Append("\t\tm_nonterminals[(int)NonTerminalEnum.");
 			add.Append(entry.Key);
-			add.Append("\", new ParseMethod[]{");
+			add.Append("] = new ParseMethod[]{");
 			
 			for (int i = 0; i < entry.Value.Count; ++i)
 			{
@@ -318,11 +326,18 @@ internal sealed partial class Writer : IDisposable
 					add.Append(", ");
 			}
 			
-			add.Append("});");
+			add.Append("};");
 			add.Append(Environment.NewLine);
 		}
 		m_engine.AddReplacement("ADD-NON-TERMINALS", add.ToString().TrimEnd());
-	}
+        var def = new StringBuilder();
+        foreach (var entry in m_rules) {
+            def.Append("\t\t");
+            def.Append(entry.Key);
+            def.AppendLine(",");
+        }
+        m_engine.AddReplacement("DEF-NON-TERMINALS-ENUM", def.ToString().TrimEnd());
+    }
 	#endregion
 	
 	#region Fields

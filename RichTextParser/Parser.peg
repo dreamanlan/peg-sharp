@@ -1,0 +1,64 @@
+start = Start
+using = RichTextParser
+debug = none
+value = ParserValue
+
+Start := Words EOF;
+
+Words := Word*  `value.TextValues = new List<IRichText>();foreach(var v in results)value.TextValues.Add(v.Value.TextValue);`
+	
+Word := String / MixString;
+
+String := [^<]+ `value.TextValue = new NormalText{ Text = text };`
+	
+MixString := HyperText / EscapeLeftTag / LeftTag;
+	
+HyperText := ComplexHyperText / SimpleHyperText / DocTypeHyperText / CommentHyperText;
+
+EscapeLeftTag := "<<" `value.TextValue = new NormalText{ Text = "<" };`
+    
+LeftTag := "<" `value.TextValue = new NormalText{ Text = "<" };`
+
+ComplexHyperText := "<" Attrs ">" HyperWord EndHyperText    `var ht = new HyperText();ht.Attrs.AddRange(results[1].Value.AttrValues);ht.Texts.AddRange(results[3].Value.TextValues);ht.EndTag = results[4].Value.StringValue;value.TextValue = ht;`
+
+SimpleHyperText := "<" Attrs "/>"    `var ht = new HyperText();ht.Attrs.AddRange(results[1].Value.AttrValues);value.TextValue = ht;`
+
+DocTypeHyperText := "<!" Attrs DocTypeEnd   `var uht = new UnusedHyperText();uht.Attrs.AddRange(results[1].Value.AttrValues);value.TextValue = uht;`
+
+CommentHyperText := "<!--" CommentText "-->" `value.TextValue = new UnusedHyperText{ Text = results[1].Value.StringValue };`
+
+CommentText := (!"-->".)*   `value.StringValue = text;`
+	
+DocTypeEnd := ">" / "/>";
+
+HyperWord := EmbedWord*  `value.TextValues = new List<IRichText>();foreach(var v in results)value.TextValues.Add(v.Value.TextValue);`
+
+EmbedWord := String / HyperText / EscapeLeftTag;
+	
+EndHyperText := "</" EndTagText ">"  `value.StringValue = results[1].Value.StringValue;`
+
+EndTagText := [^<>]+    `value.StringValue = text;`
+	
+Attrs := Attr+  `value.AttrValues = new List<HyperTextAttr>();foreach(var v in results)value.AttrValues.Add(v.Value.AttrValue);`
+	
+Attr :=	KeyValue / KeyNoValue;
+
+KeyValue := S* Id S* "=" S* Value S*    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results[2].Value.StringValue };`
+
+KeyNoValue := S* Id S*    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue };`
+			
+Id := NotStrId / Str1 / Str2 `value.StringValue = text;`
+	
+Value := NotStrVal / Str1 / Str2   `value.StringValue = text;`
+
+NotStrId := [_#@$%&a-zA-Z0-9.:] [^'"<>=\t\r\n /]*   `value.StringValue = text;`
+
+NotStrVal := ([_#@$%&a-zA-Z0-9+.:] / "-") [^'"<>=\t\r\n /]*   `value.StringValue = text;`
+
+Str1 := '"' [^"]* '"';
+
+Str2 := "'" [^']* "'";
+	
+S := [\r\n\t ];
+			
+EOF := !.;

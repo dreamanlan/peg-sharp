@@ -21,7 +21,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -31,7 +31,7 @@ internal sealed class AssertExpression : Expression
 {
 	public AssertExpression(Expression expression)
 	{
-		Contract.Requires(expression != null, "expression is null");
+		Debug.Assert(expression != null, "expression is null");
 		
 		Expression = expression;
 	}
@@ -63,12 +63,12 @@ internal sealed class AssertExpression : Expression
 		return Expression.GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth)
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
 			line.Append("_state = DoAssert(_state, results,");
-			Expression.Write(line, depth + 1);
+			Expression.Write(line, depth + 1, preallocInit, ref pmIndex);
 			line.Append(")");
 		}
 		else
@@ -78,12 +78,15 @@ internal sealed class AssertExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);				// TODO: use lambdas once we drop .NET 2.0 support
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoAssert({0}, {1},", s, r);
-//			line.AppendFormat("({0}, {1}) => DoAssert({0}, {1},", s, r);
-			Expression.Write(line, depth + 1);
-//			line.Append(")");
-			line.Append(");}");
-		}
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+			preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoAssert({1}, {2},", pmIndex, s, r);
+            var newPreallocInit = new StringBuilder();
+            Expression.Write(preallocInit, depth + 1, newPreallocInit, ref pmIndex);
+			preallocInit.Append(");}");
+            preallocInit.AppendLine(";");
+            preallocInit.Append(newPreallocInit.ToString());
+        }
 	}
 	
 	public override string ToSubString()
@@ -106,9 +109,8 @@ internal sealed class ChoiceExpression : Expression
 {
 	public ChoiceExpression(Expression[] expressions)
 	{
-		Contract.Requires(expressions != null, "expressions is null");
-		Contract.Requires(expressions.Length >= 2, "expressions length is less than two");
-		Contract.Requires(Contract.ForAll(expressions, e => e != null));
+		Debug.Assert(expressions != null, "expressions is null");
+		Debug.Assert(expressions.Length >= 2, "expressions length is less than two");
 		
 		Expressions = expressions;
 	}
@@ -146,12 +148,14 @@ internal sealed class ChoiceExpression : Expression
 		return (from e in Expressions from l in e.GetLeftRules() select l).ToArray();
 	}
 	
-	public override void Write(StringBuilder line, int depth)
-	{
-		string args = DoGetArgs(depth + 1);
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+    {
+        var newPreallocInit = new StringBuilder();
+        string args = DoGetArgs(depth + 1, newPreallocInit, ref pmIndex);
 		if (depth == 0)
 		{
 			line.AppendFormat("_state = DoChoice(_state, results{0})", args);
+            preallocInit.Append(newPreallocInit.ToString());
 		}
 		else
 		{
@@ -160,9 +164,12 @@ internal sealed class ChoiceExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoChoice({0}, {1}{2});}}", s, r, args);
-//			line.AppendFormat("({0}, {1}) => DoChoice({0}, {1}{2})", s, r, args);
-		}
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoChoice({1}, {2}{3});}}", pmIndex, s, r, args);
+            preallocInit.AppendLine(";");
+            preallocInit.Append(newPreallocInit.ToString());
+        }
 	}
 	
 	public override string ToString()
@@ -180,14 +187,14 @@ internal sealed class ChoiceExpression : Expression
 		return result.ToString();
 	}
 	
-	private string DoGetArgs(int depth)
+	private string DoGetArgs(int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		var line = new StringBuilder();
 		
 		foreach (Expression e in Expressions)
 		{
 			line.Append(",");
-			e.Write(line, depth);
+			e.Write(line, depth, preallocInit, ref pmIndex);
 		}
 		
 		return line.ToString();
@@ -198,7 +205,7 @@ internal sealed class LiteralExpression : Expression
 {
 	public LiteralExpression(string literal)
 	{
-		Contract.Requires(!string.IsNullOrEmpty(literal), "literal is null or empty");
+		Debug.Assert(!string.IsNullOrEmpty(literal), "literal is null or empty");
 		
 		Literal = literal;
 	}
@@ -210,7 +217,7 @@ internal sealed class LiteralExpression : Expression
 		return Used.Literal;
 	}
 	
-	public override void Write(StringBuilder line, int depth)
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
@@ -223,9 +230,11 @@ internal sealed class LiteralExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoParseLiteral({0}, {1}, \"{2}\");}}", s, r, Literal.Replace("\"", "\\\""));
-//			line.AppendFormat("({0}, {1}) => DoParseLiteral({0}, {1}, \"{2}\")", s, r, Literal.Replace("\"", "\\\""));
-		}
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoParseLiteral({1}, {2}, \"{3}\");}}", pmIndex, s, r, Literal.Replace("\"", "\\\""));
+            preallocInit.AppendLine(";");
+        }
 	}
 	
 	public override IEnumerable<Expression> Select(Predicate<Expression> predicate)
@@ -254,15 +263,14 @@ internal sealed class NAssertExpression : Expression
 {
 	public NAssertExpression(Expression expression)
 	{
-		Contract.Requires(expression != null, "expression is null");
+		Debug.Assert(expression != null, "expression is null");
 		
 		Expression = expression;
 	}
-
-    [ContractInvariantMethod]
+    
     private void ObjectInvariant()
     {
-        Contract.Invariant(Expression != null);
+        Debug.Assert(Expression != null);
     }
 
 	public Expression Expression {get; }
@@ -292,12 +300,12 @@ internal sealed class NAssertExpression : Expression
 		return Expression.GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth)
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
 			line.Append("_state = DoNAssert(_state, results,");
-			Expression.Write(line, depth + 1);
+			Expression.Write(line, depth + 1, preallocInit, ref pmIndex);
 			line.Append(")");
 		}
 		else
@@ -307,11 +315,14 @@ internal sealed class NAssertExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoNAssert({0}, {1},", s, r);
-//			line.AppendFormat("({0}, {1}) => DoNAssert({0}, {1},", s, r);
-			Expression.Write(line, depth + 1);
-			line.Append(");}");
-//			line.Append(")");
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoNAssert({1}, {2},", pmIndex, s, r);
+            var newPreallocInit = new StringBuilder();
+            Expression.Write(preallocInit, depth + 1, newPreallocInit, ref pmIndex);
+            preallocInit.Append(");}");
+            preallocInit.AppendLine(";");
+            preallocInit.Append(newPreallocInit.ToString());
 		}
 	}
 	
@@ -335,7 +346,7 @@ internal sealed class RangeExpression : Expression
 {
 	public RangeExpression(string text)
 	{
-		Contract.Requires(!string.IsNullOrEmpty(text), "text is null or empty");
+		Debug.Assert(!string.IsNullOrEmpty(text), "text is null or empty");
 		
 		var chars = new StringBuilder();
 		var ranges = new StringBuilder();
@@ -372,11 +383,11 @@ internal sealed class RangeExpression : Expression
 			Categories = "null";
 	}
 
-    [ContractInvariantMethod]
+    
     private void ObjectInvariant()
     {
-        Contract.Invariant(Chars != null);
-        Contract.Invariant(Ranges != null);
+        Debug.Assert(Chars != null);
+        Debug.Assert(Ranges != null);
     }
 
 	public string Chars {get; }
@@ -399,7 +410,7 @@ internal sealed class RangeExpression : Expression
 		return new string[0];
 	}
 	
-	public override void Write(StringBuilder line, int depth)
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		string chars = Chars.Length > 0 ? "\"" + Chars.EscapeAll().Replace("\\]", "]").Replace("\"", "\\\"") + "\"" : "string.Empty";
 		string ranges = Ranges.Length > 0 ? "\"" + DoEscape(Ranges).Replace("\"", "\\\"") + "\"" : "string.Empty";
@@ -416,13 +427,13 @@ internal sealed class RangeExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);
-			
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoParseRange({0}, {1}, {2}, {3}, {4}, {5}, \"{6}\");}}",
-				s, r, Inverted ? "true" : "false", chars, ranges, Categories, this);
-//			line.AppendFormat("({0}, {1}) => DoParseRange({0}, {1}, {2}, {3}, {4}, {5}, \"{6}\")",
-//				s, r, Inverted ? "true" : "false", chars, ranges, Categories, this);
-		}
-	}
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoParseRange({1}, {2}, {3}, {4}, {5}, {6}, \"{7}\");}}",
+                pmIndex, s, r, Inverted ? "true" : "false", chars, ranges, Categories, this);
+            preallocInit.AppendLine(";");
+        }
+    }
 	
 	public override IEnumerable<Expression> Select(Predicate<Expression> predicate)
 	{
@@ -465,7 +476,7 @@ internal sealed class RangeExpression : Expression
 	
 	private string DoEscape(string s)
 	{
-	    Contract.Requires(s != null);
+	    Debug.Assert(s != null);
 	    return s.EscapeAll().Replace("]", "\\]");
 	}
 
@@ -607,10 +618,10 @@ internal sealed class RepetitionExpression : Expression
 {
 	public RepetitionExpression(Expression expression, int min, int max)
 	{
-		Contract.Requires(expression != null, "expression is null");
-		Contract.Requires(min >= 0, "min is negative");
-		Contract.Requires(max > 0, "max is not positive");
-		Contract.Requires(min <= max, "mismatched min and max");
+		Debug.Assert(expression != null, "expression is null");
+		Debug.Assert(min >= 0, "min is negative");
+		Debug.Assert(max > 0, "max is not positive");
+		Debug.Assert(min <= max, "mismatched min and max");
 		
 		Expression = expression;
 		Min = min;
@@ -648,12 +659,12 @@ internal sealed class RepetitionExpression : Expression
 		return Expression.GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth)
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
 			line.AppendFormat("_state = DoRepetition(_state, results, {0}, {1},", Min, Max);
-			Expression.Write(line, depth + 1);
+			Expression.Write(line, depth + 1, preallocInit, ref pmIndex);
 			line.Append(")");
 		}
 		else
@@ -663,12 +674,15 @@ internal sealed class RepetitionExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoRepetition({0}, {1}, {2}, {3},", s, r, Min, Max);
-//			line.AppendFormat("({0}, {1}) => DoRepetition({0}, {1}, {2}, {3},", s, r, Min, Max);
-			Expression.Write(line, depth + 1);
-			line.Append(");}");
-//			line.Append(")");
-		}
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoRepetition({1}, {2}, {3}, {4},", pmIndex, s, r, Min, Max);
+            var newPreallocInit = new StringBuilder();
+            Expression.Write(preallocInit, depth + 1, newPreallocInit, ref pmIndex);
+			preallocInit.Append(");}");
+            preallocInit.AppendLine(";");
+            preallocInit.Append(newPreallocInit.ToString());
+        }
 	}
 	
 	public override string ToSubString()
@@ -719,7 +733,7 @@ internal sealed class RuleExpression : Expression
 {
 	public RuleExpression(string name)
 	{
-		Contract.Requires(!string.IsNullOrEmpty(name), "name is null or empty");
+		Debug.Assert(!string.IsNullOrEmpty(name), "name is null or empty");
 		
 		Name = name;
 	}
@@ -736,13 +750,13 @@ internal sealed class RuleExpression : Expression
 		return new string[]{Name};
 	}
 	
-	public override void Write(StringBuilder line, int depth)
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
-			line.Append("_state = DoParse(_state, results, \"");
+			line.Append("_state = DoParse(_state, results, (int)NonTerminalEnum.");
 			line.Append(Name);
-			line.Append("\")");
+			line.Append(")");
 		}
 		else
 		{
@@ -751,13 +765,14 @@ internal sealed class RuleExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoParse({0}, {1}, \"", s, r);
-//			line.AppendFormat("({0}, {1}) => DoParse({0}, {1}, \"", s, r);
-			line.Append(Name);
-			line.Append("\");}");
-//			line.Append("\")");
-		}
-	}
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoParse({1}, {2}, (int)NonTerminalEnum.", pmIndex, s, r);
+            preallocInit.Append(Name);
+            preallocInit.Append(");}");
+            preallocInit.AppendLine(";");
+        }
+    }
 	
 	public override IEnumerable<Expression> Select(Predicate<Expression> predicate)
 	{
@@ -780,17 +795,16 @@ internal sealed class SequenceExpression : Expression
 {
 	public SequenceExpression(Expression[] expressions)
 	{
-		Contract.Requires(expressions != null, "expressions is null");
-		Contract.Requires(expressions.Length > 0, "expressions is empty");
-		Contract.Requires(Contract.ForAll(expressions, e => e != null));
+		Debug.Assert(expressions != null, "expressions is null");
+		Debug.Assert(expressions.Length > 0, "expressions is empty");
 		
 		Expressions = expressions;
 	}
 
-    [ContractInvariantMethod]
+    
     private void ObjectInvariant()
     {
-        Contract.Invariant(Expressions != null);
+        Debug.Assert(Expressions != null);
     }
     
 	public Expression[] Expressions {get; }
@@ -826,13 +840,15 @@ internal sealed class SequenceExpression : Expression
 		return Expressions[0].GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth)
+	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
-		string args = DoGetArgs(depth + 1);
+        var newPreallocInit = new StringBuilder();
+		string args = DoGetArgs(depth + 1, newPreallocInit, ref pmIndex);
 		if (depth == 0)
 		{
 			line.AppendFormat("_state = DoSequence(_state, results{0})", args);
-		}
+            preallocInit.Append(newPreallocInit.ToString());
+        }
 		else
 		{
 			string s = depth == 1 ? "s" : ("s" + depth);
@@ -840,9 +856,12 @@ internal sealed class SequenceExpression : Expression
 			string t = new string('\t', 2 + depth);
 			line.AppendLine();
 			line.Append(t);
-			line.AppendFormat("delegate (State {0}, List<Result> {1}) {{return DoSequence({0}, {1}{2});}}", s, r, args);
-//			line.AppendFormat("({0}, {1}) => DoSequence({0}, {1}{2})", s, r, args);
-		}
+            ++pmIndex;
+            line.AppendFormat("m_ParseMethod{0}", pmIndex);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoSequence({1}, {2}{3});}}", pmIndex, s, r, args);
+            preallocInit.AppendLine(";");
+            preallocInit.Append(newPreallocInit.ToString());
+        }
 	}
 	
 	public override string ToString()
@@ -860,14 +879,14 @@ internal sealed class SequenceExpression : Expression
 		return result.ToString();
 	}
 	
-	private string DoGetArgs(int depth)
+	private string DoGetArgs(int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		var line = new StringBuilder();
 		
 		foreach (Expression e in Expressions)
 		{
 			line.Append(",");
-			e.Write(line, depth);
+			e.Write(line, depth, preallocInit, ref pmIndex);
 		}
 		
 		return line.ToString();
