@@ -84,10 +84,16 @@ INIT-PREALLOC-FIELDS
 	//> OnParseProlog
 	//< OnParseEpilog
 	partial void OnParseEpilog(State state);
-	//> OnParseEpilog
-	
-	//< DoAssert {{used-assert}}
-	private State DoAssert(State state, List<Result> results, ParseMethod method)
+    //> OnParseEpilog
+    //< ignoreliteral
+    partial void useliteralresult();
+    //> ignoreliteral
+    //< ignorerange
+    partial void userangeresult();
+    //> ignorerange
+
+    //< DoAssert {{used-assert}}
+    private State DoAssert(State state, List<Result> results, ParseMethod method)
 	{
 		State temp = method(state, results);
 		

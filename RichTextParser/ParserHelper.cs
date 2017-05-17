@@ -1,4 +1,4 @@
-﻿//#define USE_PARSER2
+﻿#define USE_PARSER2
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -49,6 +49,12 @@ internal sealed class TemplateEngine
         m_context.SetVariable(name, value);
     }
 
+    public object GetVariable(string name)
+    {
+        Debug.Assert(name != null);
+        return m_context.Dereference(name);
+    }
+
     public void SetReplacement(string name, string value)
     {
         Debug.Assert(name != null);
@@ -59,6 +65,12 @@ internal sealed class TemplateEngine
     {
         Debug.Assert(name != null);
         m_context.AddExcluded(name);
+    }
+
+    public bool IsExcluded(string name)
+    {
+        Debug.Assert(name != null);
+        return m_context.IsExcluded(name);
     }
 
     public string Process(string templateName)

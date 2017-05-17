@@ -12,13 +12,13 @@ Word := String / HyperText;
 
 String := [^<]+ `value.TextValue = new NormalText{ Text = text };`
 	
-HyperText := "<" HyperTextNext1?  `if(results.Count>1 && null!=results[1].Value.TextValue){ value.TextValue = results[1].Value.TextValue; }else{ value.TextValue = new NormalText{ Text = "<" }; }`
+HyperText := "<" HyperTextNext1?  `if(results.Count>0 && null!=results[0].Value.TextValue){ value.TextValue = results[0].Value.TextValue; }else{ value.TextValue = new NormalText{ Text = "<" }; }`
 	
 HyperTextNext1 := HyperTextNext2 / DocType;
 
 HyperTextNext2 := Attrs HyperTextNext3  `var ht = results[1].Value.TextValue as HyperText;ht.Attrs.AddRange(results[0].Value.AttrValues);value.TextValue = ht;`
 
-DocType := "!" DocTypeNext1 `value.TextValue = results[1].Value.TextValue;`
+DocType := "!" DocTypeNext1 `value.TextValue = results[0].Value.TextValue;`
 	
 DocTypeNext1 := DocTypeNext2 / CommentType;
 
@@ -26,17 +26,17 @@ DocTypeNext2 := Attrs DocTypeEnd  `var uht = new UnusedHyperText();uht.Attrs.Add
 	
 DocTypeEnd := ">" / "/>";
 
-CommentType := "--" CommentText "-->" `var uht = new UnusedHyperText{ Text = results[1].Value.StringValue };value.TextValue = uht;`
+CommentType := "--" CommentText "-->" `var uht = new UnusedHyperText{ Text = results[0].Value.StringValue };value.TextValue = uht;`
 
 CommentText := (!"-->".)* `value.StringValue = text;`
 
 HyperTextNext3 := ComplexHyperText / SimpleHyperText;
 
-ComplexHyperText := ">" Texts EndHyperText  `var ht = new HyperText();ht.Texts.AddRange(results[1].Value.TextValues);ht.EndTag = results[2].Value.StringValue;value.TextValue = ht;`
+ComplexHyperText := ">" Texts EndHyperText  `var ht = new HyperText();ht.Texts.AddRange(results[0].Value.TextValues);ht.EndTag = results[1].Value.StringValue;value.TextValue = ht;`
 
 SimpleHyperText := "/>" `var ht = new HyperText();value.TextValue = ht;`
 
-EndHyperText := "</" EndTagText ">"  `value.StringValue = results[1].Value.StringValue;`
+EndHyperText := "</" EndTagText ">"  `value.StringValue = results[0].Value.StringValue;`
 
 EndTagText := [^<>]+    `value.StringValue = text;`
 	
@@ -46,7 +46,7 @@ Text := String / InnerHyperText / EscapeLeftTag;
 
 EscapeLeftTag := "<<" `value.TextValue = new NormalText{ Text = "<" };`
 	
-InnerHyperText := "<" HyperTextNext1  `value.TextValue = results[1].Value.TextValue;`
+InnerHyperText := "<" HyperTextNext1  `value.TextValue = results[0].Value.TextValue;`
 	
 Attrs := Attr S* Attrs? `var hta = results[0].Value.AttrValue;var htas = new List<HyperTextAttr>();htas.Add(hta);if(results.Count>1 && null!=results[results.Count-1].Value.AttrValues){htas.AddRange(results[results.Count-1].Value.AttrValues);};value.AttrValues = htas;`
 	

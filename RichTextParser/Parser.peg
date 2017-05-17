@@ -19,13 +19,13 @@ EscapeLeftTag := "<<" `value.TextValue = new NormalText{ Text = "<" };`
     
 LeftTag := "<" `value.TextValue = new NormalText{ Text = "<" };`
 
-ComplexHyperText := "<" Attrs ">" HyperWord EndHyperText    `var ht = new HyperText();ht.Attrs.AddRange(results[1].Value.AttrValues);ht.Texts.AddRange(results[3].Value.TextValues);ht.EndTag = results[4].Value.StringValue;value.TextValue = ht;`
+ComplexHyperText := "<" Attrs ">" HyperWord EndHyperText    `var ht = new HyperText();ht.Attrs.AddRange(results[0].Value.AttrValues);ht.Texts.AddRange(results[1].Value.TextValues);ht.EndTag = results[2].Value.StringValue;value.TextValue = ht;`
 
-SimpleHyperText := "<" Attrs "/>"    `var ht = new HyperText();ht.Attrs.AddRange(results[1].Value.AttrValues);value.TextValue = ht;`
+SimpleHyperText := "<" Attrs "/>"    `var ht = new HyperText();ht.Attrs.AddRange(results[0].Value.AttrValues);value.TextValue = ht;`
 
-DocTypeHyperText := "<!" Attrs DocTypeEnd   `var uht = new UnusedHyperText();uht.Attrs.AddRange(results[1].Value.AttrValues);value.TextValue = uht;`
+DocTypeHyperText := "<!" Attrs DocTypeEnd   `var uht = new UnusedHyperText();uht.Attrs.AddRange(results[0].Value.AttrValues);value.TextValue = uht;`
 
-CommentHyperText := "<!--" CommentText "-->" `value.TextValue = new UnusedHyperText{ Text = results[1].Value.StringValue };`
+CommentHyperText := "<!--" CommentText "-->" `value.TextValue = new UnusedHyperText{ Text = results[0].Value.StringValue };`
 
 CommentText := (!"-->".)*   `value.StringValue = text;`
 	
@@ -35,7 +35,7 @@ HyperWord := EmbedWord*  `value.TextValues = new List<IRichText>();foreach(var v
 
 EmbedWord := String / HyperText / EscapeLeftTag;
 	
-EndHyperText := "</" EndTagText ">"  `value.StringValue = results[1].Value.StringValue;`
+EndHyperText := "</" EndTagText ">"  `value.StringValue = results[0].Value.StringValue;`
 
 EndTagText := [^<>]+    `value.StringValue = text;`
 	
@@ -43,7 +43,7 @@ Attrs := Attr+  `value.AttrValues = new List<HyperTextAttr>();foreach(var v in r
 	
 Attr :=	KeyValue / KeyNoValue;
 
-KeyValue := S* Id S* "=" S* Value S*    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results[2].Value.StringValue };`
+KeyValue := S* Id S* "=" S* Value S*    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results[1].Value.StringValue };`
 
 KeyNoValue := S* Id S*    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue };`
 			

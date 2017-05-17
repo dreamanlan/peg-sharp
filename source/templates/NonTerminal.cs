@@ -2,8 +2,8 @@
 	private State METHOD-NAME(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
-		List<Result> results = new List<Result>();          // {{not (has-pass-action and pass-action-uses-text) and value != 'void' or value == 'XmlNode'}}
-        List<Result> results = null;                        // {{has-pass-action and pass-action-uses-text and value != 'XmlNode' or value == 'void'}}
+		List<Result> results = new List<Result>();          // {{(not has-pass-action or pass-action-uses-results) and value != 'void' or value == 'XmlNode'}}
+        List<Result> results = null;                        // {{has-pass-action and (pass-action-uses-text or not pass-action-uses-results) and value != 'XmlNode' or value == 'void'}}
         Console.WriteLine("RULE-NAME");			            // {{debugging}}
 		
 		string fail = null;								    // {{has-prolog and (prolog-uses-fail or pass-epilog-uses-fail)}}
@@ -26,9 +26,9 @@
 			XmlElement _node = DoCreateElementNode("RULE-NAME", _startIndex, _state.Index - _startIndex, DoGetLine(_startIndex), DoGetCol(_startIndex), (from r in results where r.Value != null select r.Value).ToArray());	// {{value == 'XmlNode'}}
 			_node.SetAttribute("alternative", "RULE-INDEX");							// {{value == 'XmlNode' and rule-has-alternatives}}
 			VALUE value = _node;														// {{value == 'XmlNode'}}
-			VALUE value = results.Count > 0 ? results[0].Value : default(VALUE);        // {{not (has-pass-action and pass-action-uses-text) and value != 'XmlNode' and value != 'void'}}
-            VALUE value = default(VALUE);                                               // {{has-pass-action and pass-action-uses-text and value != 'XmlNode' or value == 'void'}}
-
+			VALUE value = results.Count > 0 ? results[0].Value : default(VALUE);        // {{(not has-pass-action or pass-action-uses-results) and value != 'XmlNode' and value != 'void'}}
+            VALUE value = default(VALUE);                                               // {{has-pass-action and (pass-action-uses-text or not pass-action-uses-results) and value != 'XmlNode' or value == 'void'}}
+        
             string fatal = null;								                        // {{has-pass-action and pass-action-uses-fatal}}
 			string text = m_input.Substring(_startIndex, _state.Index - _startIndex);	// {{has-pass-action and pass-action-uses-text}}
 			

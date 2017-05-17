@@ -188,12 +188,15 @@ internal sealed partial class Writer : IDisposable
 		m_engine.SetVariable("has-prolog", prolog.Length > 0);
         m_engine.SetVariable("pass-action-uses-results", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "results"));
         m_engine.SetVariable("pass-action-uses-fatal", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "fatal"));
-		m_engine.SetVariable("pass-action-uses-text", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "text"));
+        m_engine.SetVariable("pass-action-uses-text", rule.PassAction != null && DoReferencesLocal(rule.PassAction, "text"));
 		m_engine.SetVariable("pass-epilog-uses-fail", passEpilog.Length > 0 && DoReferencesLocal(passEpilog, "fail"));
 		m_engine.SetVariable("prolog-uses-fail", prolog.Length > 0 && DoReferencesLocal(prolog, "fail"));
 		m_engine.SetVariable("rule-has-alternatives", maxIndex > 1);
-		
-		string comment = string.Format("{0} := {1}", rule.Name, rule.Expression);
+
+        m_engine.SetVariable("pass-action-uses-useliteralresult", rule.PassAction != null && rule.PassAction.Contains("useliteralresult();"));
+        m_engine.SetVariable("pass-action-uses-userangeresult", rule.PassAction != null && rule.PassAction.Contains("userangeresult();"));
+
+        string comment = string.Format("{0} := {1}", rule.Name, rule.Expression);
 		
 		string debugName = rule.Name;
 		if (maxIndex > 1)
@@ -201,8 +204,8 @@ internal sealed partial class Writer : IDisposable
 
 		var body = new StringBuilder();
 		body.Append("\t");
-		rule.Expression.Write(body, 0, preallocInit, ref pmIndex);
-		body.Append(";");
+		rule.Expression.Write(m_engine, body, 0, preallocInit, ref pmIndex);
+		body.Append(";");        
 		
 		m_engine.SetReplacement("DEBUG-NAME", debugName);
 		m_engine.SetReplacement("FAIL-ACTION", rule.FailAction != null ? DoGetCode("", rule.FailAction) : string.Empty);
@@ -254,8 +257,11 @@ internal sealed partial class Writer : IDisposable
 			
 		else if (text.Contains(local + ")"))
 			return true;
-			
-		return false;
+
+        else if (text.Contains(local + "}"))
+            return true;
+
+        return false;
 	}
 	
 	private void DoSetUsed()

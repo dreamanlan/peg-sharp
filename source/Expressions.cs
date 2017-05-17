@@ -63,12 +63,12 @@ internal sealed class AssertExpression : Expression
 		return Expression.GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
 			line.Append("_state = DoAssert(_state, results,");
-			Expression.Write(line, depth + 1, preallocInit, ref pmIndex);
+			Expression.Write(engine, line, depth + 1, preallocInit, ref pmIndex);
 			line.Append(")");
 		}
 		else
@@ -82,7 +82,7 @@ internal sealed class AssertExpression : Expression
             line.AppendFormat("m_ParseMethod{0}", pmIndex);
 			preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoAssert({1}, {2},", pmIndex, s, r);
             var newPreallocInit = new StringBuilder();
-            Expression.Write(preallocInit, depth + 1, newPreallocInit, ref pmIndex);
+            Expression.Write(engine, preallocInit, depth + 1, newPreallocInit, ref pmIndex);
 			preallocInit.Append(");}");
             preallocInit.AppendLine(";");
             preallocInit.Append(newPreallocInit.ToString());
@@ -148,10 +148,10 @@ internal sealed class ChoiceExpression : Expression
 		return (from e in Expressions from l in e.GetLeftRules() select l).ToArray();
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
     {
         var newPreallocInit = new StringBuilder();
-        string args = DoGetArgs(depth + 1, newPreallocInit, ref pmIndex);
+        string args = DoGetArgs(engine, depth + 1, newPreallocInit, ref pmIndex);
 		if (depth == 0)
 		{
 			line.AppendFormat("_state = DoChoice(_state, results{0})", args);
@@ -187,14 +187,14 @@ internal sealed class ChoiceExpression : Expression
 		return result.ToString();
 	}
 	
-	private string DoGetArgs(int depth, StringBuilder preallocInit, ref int pmIndex)
+	private string DoGetArgs(TemplateEngine engine, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		var line = new StringBuilder();
 		
 		foreach (Expression e in Expressions)
 		{
 			line.Append(",");
-			e.Write(line, depth, preallocInit, ref pmIndex);
+			e.Write(engine, line, depth, preallocInit, ref pmIndex);
 		}
 		
 		return line.ToString();
@@ -217,11 +217,12 @@ internal sealed class LiteralExpression : Expression
 		return Used.Literal;
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
+        bool useLiteralResult = (bool)engine.GetVariable("pass-action-uses-useliteralresult");
 		if (depth == 0)
 		{
-			line.AppendFormat("_state = DoParseLiteral(_state, results, \"{0}\")", Literal.Replace("\"", "\\\""));
+			line.AppendFormat("_state = DoParseLiteral(_state, {0}, \"{1}\")", useLiteralResult ? "results" : "null", Literal.Replace("\"", "\\\""));
 		}
 		else
 		{
@@ -232,7 +233,7 @@ internal sealed class LiteralExpression : Expression
 			line.Append(t);
             ++pmIndex;
             line.AppendFormat("m_ParseMethod{0}", pmIndex);
-            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoParseLiteral({1}, {2}, \"{3}\");}}", pmIndex, s, r, Literal.Replace("\"", "\\\""));
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoParseLiteral({1}, {4}, \"{3}\");}}", pmIndex, s, r, Literal.Replace("\"", "\\\""), useLiteralResult ? r : "null");
             preallocInit.AppendLine(";");
         }
 	}
@@ -300,12 +301,12 @@ internal sealed class NAssertExpression : Expression
 		return Expression.GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
 			line.Append("_state = DoNAssert(_state, results,");
-			Expression.Write(line, depth + 1, preallocInit, ref pmIndex);
+			Expression.Write(engine, line, depth + 1, preallocInit, ref pmIndex);
 			line.Append(")");
 		}
 		else
@@ -319,7 +320,7 @@ internal sealed class NAssertExpression : Expression
             line.AppendFormat("m_ParseMethod{0}", pmIndex);
             preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoNAssert({1}, {2},", pmIndex, s, r);
             var newPreallocInit = new StringBuilder();
-            Expression.Write(preallocInit, depth + 1, newPreallocInit, ref pmIndex);
+            Expression.Write(engine, preallocInit, depth + 1, newPreallocInit, ref pmIndex);
             preallocInit.Append(");}");
             preallocInit.AppendLine(";");
             preallocInit.Append(newPreallocInit.ToString());
@@ -410,14 +411,15 @@ internal sealed class RangeExpression : Expression
 		return new string[0];
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
-	{
-		string chars = Chars.Length > 0 ? "\"" + Chars.EscapeAll().Replace("\\]", "]").Replace("\"", "\\\"") + "\"" : "string.Empty";
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+    {
+        bool useRangeResult = (bool)engine.GetVariable("pass-action-uses-userangeresult");
+        string chars = Chars.Length > 0 ? "\"" + Chars.EscapeAll().Replace("\\]", "]").Replace("\"", "\\\"") + "\"" : "string.Empty";
 		string ranges = Ranges.Length > 0 ? "\"" + DoEscape(Ranges).Replace("\"", "\\\"") + "\"" : "string.Empty";
 		
 		if (depth == 0)
 		{
-			line.AppendFormat("_state = DoParseRange(_state, results, {0}, {1}, {2}, {3}, \"{4}\")",
+			line.AppendFormat("_state = DoParseRange(_state, {0}, {1}, {2}, {3}, {4}, \"{5}\")", useRangeResult ? "results" : "null", 
 				Inverted ? "true" : "false", chars, ranges, Categories, this);
 		}
 		else
@@ -429,8 +431,8 @@ internal sealed class RangeExpression : Expression
 			line.Append(t);
             ++pmIndex;
             line.AppendFormat("m_ParseMethod{0}", pmIndex);
-            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoParseRange({1}, {2}, {3}, {4}, {5}, {6}, \"{7}\");}}",
-                pmIndex, s, r, Inverted ? "true" : "false", chars, ranges, Categories, this);
+            preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoParseRange({1}, {8}, {3}, {4}, {5}, {6}, \"{7}\");}}",
+                pmIndex, s, r, Inverted ? "true" : "false", chars, ranges, Categories, this, useRangeResult ? r : "null");
             preallocInit.AppendLine(";");
         }
     }
@@ -659,12 +661,12 @@ internal sealed class RepetitionExpression : Expression
 		return Expression.GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
 			line.AppendFormat("_state = DoRepetition(_state, results, {0}, {1},", Min, Max);
-			Expression.Write(line, depth + 1, preallocInit, ref pmIndex);
+			Expression.Write(engine, line, depth + 1, preallocInit, ref pmIndex);
 			line.Append(")");
 		}
 		else
@@ -678,7 +680,7 @@ internal sealed class RepetitionExpression : Expression
             line.AppendFormat("m_ParseMethod{0}", pmIndex);
             preallocInit.AppendFormat("\t\tm_ParseMethod{0} = (ParseMethod)delegate (State {1}, List<Result> {2}) {{return DoRepetition({1}, {2}, {3}, {4},", pmIndex, s, r, Min, Max);
             var newPreallocInit = new StringBuilder();
-            Expression.Write(preallocInit, depth + 1, newPreallocInit, ref pmIndex);
+            Expression.Write(engine, preallocInit, depth + 1, newPreallocInit, ref pmIndex);
 			preallocInit.Append(");}");
             preallocInit.AppendLine(";");
             preallocInit.Append(newPreallocInit.ToString());
@@ -750,7 +752,7 @@ internal sealed class RuleExpression : Expression
 		return new string[]{Name};
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		if (depth == 0)
 		{
@@ -840,10 +842,10 @@ internal sealed class SequenceExpression : Expression
 		return Expressions[0].GetLeftRules();
 	}
 	
-	public override void Write(StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
+	public override void Write(TemplateEngine engine, StringBuilder line, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
         var newPreallocInit = new StringBuilder();
-		string args = DoGetArgs(depth + 1, newPreallocInit, ref pmIndex);
+		string args = DoGetArgs(engine, depth + 1, newPreallocInit, ref pmIndex);
 		if (depth == 0)
 		{
 			line.AppendFormat("_state = DoSequence(_state, results{0})", args);
@@ -879,14 +881,14 @@ internal sealed class SequenceExpression : Expression
 		return result.ToString();
 	}
 	
-	private string DoGetArgs(int depth, StringBuilder preallocInit, ref int pmIndex)
+	private string DoGetArgs(TemplateEngine engine, int depth, StringBuilder preallocInit, ref int pmIndex)
 	{
 		var line = new StringBuilder();
 		
 		foreach (Expression e in Expressions)
 		{
 			line.Append(",");
-			e.Write(line, depth, preallocInit, ref pmIndex);
+			e.Write(engine, line, depth, preallocInit, ref pmIndex);
 		}
 		
 		return line.ToString();
