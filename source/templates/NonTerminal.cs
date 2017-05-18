@@ -37,7 +37,7 @@
 			if (!string.IsNullOrEmpty(fatal))				// {{has-pass-action and pass-action-uses-fatal}}
 				DoThrow(_startIndex, fatal);				// {{has-pass-action and pass-action-uses-fatal}}
 			
-			if (text != null && null != _outResults)																// {{has-pass-action and pass-action-uses-text}}
+			if (null != text && null != _outResults)													            // {{has-pass-action and pass-action-uses-text}}
 				_outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));	    // {{has-pass-action and pass-action-uses-text and value != 'void'}}
 				_outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input));			    // {{has-pass-action and pass-action-uses-text and value == 'void'}}
             if(null != _outResults)                                                                                 // {{(not has-pass-action or not pass-action-uses-text) and value != 'void'}}

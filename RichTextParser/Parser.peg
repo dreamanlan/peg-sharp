@@ -43,9 +43,9 @@ Attrs := Attr+  `value.AttrValues = new List<HyperTextAttr>();foreach(var v in r
 	
 Attr :=	KeyValue / KeyNoValue;
 
-KeyValue := S* Id S* "=" S* Value S*    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results[1].Value.StringValue };`
+KeyValue := S0 Id S0 "=" S0 Value S0    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results[1].Value.StringValue };`
 
-KeyNoValue := S* Id S*    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue };`
+KeyNoValue := S0 Id S0    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue };`
 			
 Id := NotStrId / Str1 / Str2 `value.StringValue = text;`
 	
@@ -58,6 +58,12 @@ NotStrVal := ([_#@$%&a-zA-Z0-9+.:] / "-") [^'"<>=\t\r\n /]*   `value.StringValue
 Str1 := '"' [^"]* '"';
 
 Str2 := "'" [^']* "'";
+
+#text=null; 是一种特殊的处理，用以指明这个非终结符的值不传给调用方（上级产生式）
+
+S0 := S*	`text=null;`
+
+#S1 := S+	`text=null;`
 	
 S := [\r\n\t ];
 			
