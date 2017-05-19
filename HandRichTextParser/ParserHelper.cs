@@ -13,16 +13,16 @@ internal struct ParserValue
     internal HyperTextAttr AttrValue;
     internal List<HyperTextAttr> AttrValues;
     internal string StringValue;
-
+    
     #region test string
-    internal const string c_TestText = @"清风徐来，水波不兴{这里无开始
-{@时装1}{!物品1}{#装备1}{$怪物3}{/玩家5}{ [pos] [x=123] [y=456] 某年某月}{ @ %123%456 某年某月}水中{{}}花
-{[href=http://www.baidu.com]baidu}顶{ [size=30] Some 天山{ [color=yellow] 天山如} 天山}
-{[href=http://www.baidu.com]baidu}层{[size=30]Some 天山{[color=yellow]天山如}天山}
-{[href=http://www.baidu.com]baidu}文{[size=30]Some 天山{[color=yellow]天山如}天山}
-{[href=http://www.baidu.com]baidu}字{[size=30]Some 天山{[color=yellow]天山如}天山}
-{[href=http://www.baidu.com]baidu}设{[size=30]Some 天山{[color=yellow]天山如}天山}
-{[href=http://www.baidu.com]baidu}定{[size=30]Some 天山{[color=yellow]天山如}天山}fdafds}";
+    internal const string c_TestText = @"清风徐来，水波不兴[这里无[开始]
+[@时装1][!物品1][#装备1][$怪物3][^玩家5][~铸剑炉][`宠物][*红包][|副本][^某某某{pos:(123,455)}][-城镇{pos:(345,564)}][&活动{data:<345,564,4312,4312,4321>}][ \pos {x:123} {y:456} 某年某月][ @ %123%456 某年某月]水中[[]]花
+[{ href : http://www.baidu.com }baidu]顶[ {size:30} Some 天山[ {color:yellow} 天山如] 天山]
+[{href:http://www.baidu.com}baidu]层[{size:30}Some 天山[{color:yellow}天山如]天山]
+[{href:http://www.baidu.com}baidu]文[{size:30}Some 天山[{color:yellow}天山如]天山]
+[{href:http://www.baidu.com}baidu]字[{size:30}Some 天山[{color:yellow}天山如]天山]
+[{href:http://www.baidu.com}baidu]设[{size:30}Some 天山[{color:yellow}天山如]天山]
+[{href:http://www.baidu.com}baidu]定[{size:30}Some 天山[{color:yellow}天山如]天山]fdafds]]";
     #endregion
 }
 internal partial class Parser

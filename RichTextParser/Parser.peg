@@ -51,9 +51,9 @@ Id := NotStrId / Str1 / Str2 `value.StringValue = text;`
 	
 Value := NotStrVal / Str1 / Str2   `value.StringValue = text;`
 
-NotStrId := [_#@$%&a-zA-Z0-9.:] [^'"<>=\t\r\n /]*   `value.StringValue = text;`
+NotStrId := [_#@$%&a-zA-Z0-9.:] [^<>=\t\r\n /]*   `value.StringValue = text;`
 
-NotStrVal := ([_#@$%&a-zA-Z0-9+.:] / "-") [^'"<>=\t\r\n /]*   `value.StringValue = text;`
+NotStrVal := ([_#@$%&a-zA-Z0-9+.:] / "-") [^<>=\t\r\n /]*   `value.StringValue = text;`
 
 Str1 := '"' [^"]* '"';
 

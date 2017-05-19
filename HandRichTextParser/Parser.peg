@@ -9,45 +9,53 @@ Words := Word*  `value.TextValues = new List<IRichText>();foreach(var v in resul
 	
 Word := String / MixString;
 
-String := [^{}]+ `value.TextValue = new NormalText{ Text = text };`
+String := [^[\]]+ `value.TextValue = new NormalText{ Text = text };`
 	
 MixString := HyperText / EscapeLeftTag / LeftTag / EscapeRightTag / RightTag;
 
-EscapeLeftTag := "{{" `value.TextValue = new NormalText{ Text = "{" };`
+EscapeLeftTag := "[[" `value.TextValue = new NormalText{ Text = "[" };`
     
-LeftTag := "{" `value.TextValue = new NormalText{ Text = "{" };`
+LeftTag := "[" `value.TextValue = new NormalText{ Text = "[" };`
 
-EscapeRightTag := "}}" `value.TextValue = new NormalText{ Text = "}" };`
+EscapeRightTag := "]]" `value.TextValue = new NormalText{ Text = "]" };`
     
-RightTag := "}" `value.TextValue = new NormalText{ Text = "}" };`
+RightTag := "]" `value.TextValue = new NormalText{ Text = "]" };`
 
-HyperText := "{" Attrs HyperWord "}" `var ht = new HyperText();ht.Attrs.AddRange(results[0].Value.AttrValues);ht.Texts.AddRange(results[1].Value.TextValues);value.TextValue = ht;`
+HyperText := "[" Attrs HyperWord "]" `var ht = new HyperText();ht.Attrs.AddRange(results[0].Value.AttrValues);ht.Texts.AddRange(results[1].Value.TextValues);value.TextValue = ht;`
 
 HyperWord := EmbedWord*  `value.TextValues = new List<IRichText>();foreach(var v in results)value.TextValues.Add(v.Value.TextValue);`
 
 EmbedWord := String / HyperText / EscapeLeftTag / EscapeRightTag;
 	
-Attrs := Attr+  `value.AttrValues = new List<HyperTextAttr>();foreach(var v in results)value.AttrValues.Add(v.Value.AttrValue);`
+Attrs := Attr*  `value.AttrValues = new List<HyperTextAttr>();foreach(var v in results)value.AttrValues.Add(v.Value.AttrValue);`
 
-Attr := TagAttr / BracketAttr;
+Attr := TagAttr / BraceAttr;
 
 TagAttr := S0 SimpleTag S0 SimpleTagValue S0	`value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results.Count > 1 ? results[1].Value.StringValue : string.Empty };`
 
-SimpleTag := "-" / [!@#$%&*+=/:?|] `value.StringValue = text;`
+SimpleTag := "-" / [!@#$%&*+=\\:?|`~^] `value.StringValue = text;`
 
-SimpleTagValue := [^!@#$%&*+=/:?|{}[\t\r\n -]* `value.StringValue = text;`
+SimpleTagValue := [^!@#$%&*+=\\:?|`~^{[\]\t\r\n -]* `value.StringValue = text;`
 	
-BracketAttr := S0 "["	AttrValue "]"	`value = results[results.Count-1].Value;`
+BraceAttr := S0 "{"	AttrValue "}"	`value = results[results.Count-1].Value;`
 
 AttrValue := KeyValue / KeyNoValue;
 
-KeyValue := S0 Id S0 "=" S0 Value S0    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results[1].Value.StringValue };`
+KeyValue := Id ":" Value  `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue, Value = results[1].Value.StringValue };`
 
-KeyNoValue := S0 Id S0    `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue };`
+KeyNoValue := Id `value.AttrValue = new HyperTextAttr{ Key = results[0].Value.StringValue };`
+
+Id := NotStrId / Str1 / Str2 `value.StringValue = text.Trim();`
+
+Value := NotStrVal / Str1 / Str2   `value.StringValue = text.Trim();`
 			
-Id := [^\t\r\n =\]]+ `value.StringValue = text;`
+NotStrId := [^'":}] [^:}]*;
 	
-Value := [^\t\r\n \]]+   `value.StringValue = text;`
+NotStrVal := [^'":}] [^}]*;
+
+Str1 := '"' [^"]* '"';
+
+Str2 := "'" [^']* "'";
 
 #text=null; 是一种特殊的处理，用以指明这个非终结符的值不传给调用方（上级产生式）
 

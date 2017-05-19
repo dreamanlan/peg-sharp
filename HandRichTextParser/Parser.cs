@@ -46,12 +46,16 @@ internal sealed partial class Parser
 		m_nonterminals[(int)NonTerminalEnum.TagAttr] = new ParseMethod[]{this.DoParseTagAttrRule};
 		m_nonterminals[(int)NonTerminalEnum.SimpleTag] = new ParseMethod[]{this.DoParseSimpleTagRule};
 		m_nonterminals[(int)NonTerminalEnum.SimpleTagValue] = new ParseMethod[]{this.DoParseSimpleTagValueRule};
-		m_nonterminals[(int)NonTerminalEnum.BracketAttr] = new ParseMethod[]{this.DoParseBracketAttrRule};
+		m_nonterminals[(int)NonTerminalEnum.BraceAttr] = new ParseMethod[]{this.DoParseBraceAttrRule};
 		m_nonterminals[(int)NonTerminalEnum.AttrValue] = new ParseMethod[]{this.DoParseAttrValueRule};
 		m_nonterminals[(int)NonTerminalEnum.KeyValue] = new ParseMethod[]{this.DoParseKeyValueRule};
 		m_nonterminals[(int)NonTerminalEnum.KeyNoValue] = new ParseMethod[]{this.DoParseKeyNoValueRule};
 		m_nonterminals[(int)NonTerminalEnum.Id] = new ParseMethod[]{this.DoParseIdRule};
 		m_nonterminals[(int)NonTerminalEnum.Value] = new ParseMethod[]{this.DoParseValueRule};
+		m_nonterminals[(int)NonTerminalEnum.NotStrId] = new ParseMethod[]{this.DoParseNotStrIdRule};
+		m_nonterminals[(int)NonTerminalEnum.NotStrVal] = new ParseMethod[]{this.DoParseNotStrValRule};
+		m_nonterminals[(int)NonTerminalEnum.Str1] = new ParseMethod[]{this.DoParseStr1Rule};
+		m_nonterminals[(int)NonTerminalEnum.Str2] = new ParseMethod[]{this.DoParseStr2Rule};
 		m_nonterminals[(int)NonTerminalEnum.S0] = new ParseMethod[]{this.DoParseS0Rule};
 		m_nonterminals[(int)NonTerminalEnum.S] = new ParseMethod[]{this.DoParseSRule};
 		m_nonterminals[(int)NonTerminalEnum.EOF] = new ParseMethod[]{this.DoParseEOFRule};
@@ -61,16 +65,16 @@ internal sealed partial class Parser
 		m_ParseMethod3 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Word);};
 		m_ParseMethod4 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.String);};
 		m_ParseMethod5 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.MixString);};
-		m_ParseMethod6 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "{}", string.Empty, null, "[^{}]");};
+		m_ParseMethod6 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "[]", string.Empty, null, "[^[\\]]");};
 		m_ParseMethod7 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.HyperText);};
 		m_ParseMethod8 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.EscapeLeftTag);};
 		m_ParseMethod9 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.LeftTag);};
 		m_ParseMethod10 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.EscapeRightTag);};
 		m_ParseMethod11 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.RightTag);};
-		m_ParseMethod12 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "{");};
+		m_ParseMethod12 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "[");};
 		m_ParseMethod13 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Attrs);};
 		m_ParseMethod14 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.HyperWord);};
-		m_ParseMethod15 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "}");};
+		m_ParseMethod15 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "]");};
 		m_ParseMethod16 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.EmbedWord);};
 		m_ParseMethod17 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.String);};
 		m_ParseMethod18 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.HyperText);};
@@ -78,35 +82,50 @@ internal sealed partial class Parser
 		m_ParseMethod20 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.EscapeRightTag);};
 		m_ParseMethod21 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Attr);};
 		m_ParseMethod22 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.TagAttr);};
-		m_ParseMethod23 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.BracketAttr);};
+		m_ParseMethod23 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.BraceAttr);};
 		m_ParseMethod24 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
 		m_ParseMethod25 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.SimpleTag);};
 		m_ParseMethod26 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
 		m_ParseMethod27 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.SimpleTagValue);};
 		m_ParseMethod28 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
 		m_ParseMethod29 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "-");};
-		m_ParseMethod30 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, false, "!@#$%&*+=/:?|", string.Empty, null, "[!@#$%&*+=/:?|]");};
-		m_ParseMethod31 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "!@#$%&*+=/:?|{}[\t\r\n -", string.Empty, null, "[^!@#$%&*+=/:?|{}[\t\r\n -]");};
+		m_ParseMethod30 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, false, "!@#$%&*+=\\:?|`~^", string.Empty, null, "[!@#$%&*+=\\:?|`~^]");};
+		m_ParseMethod31 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "!@#$%&*+=\\:?|`~^{[]\t\r\n -", string.Empty, null, "[^!@#$%&*+=\\:?|`~^{[\\]\t\r\n -]");};
 		m_ParseMethod32 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
-		m_ParseMethod33 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "[");};
+		m_ParseMethod33 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "{");};
 		m_ParseMethod34 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.AttrValue);};
-		m_ParseMethod35 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "]");};
+		m_ParseMethod35 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "}");};
 		m_ParseMethod36 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.KeyValue);};
 		m_ParseMethod37 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.KeyNoValue);};
-		m_ParseMethod38 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
-		m_ParseMethod39 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Id);};
-		m_ParseMethod40 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
-		m_ParseMethod41 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "=");};
-		m_ParseMethod42 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
-		m_ParseMethod43 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Value);};
-		m_ParseMethod44 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
-		m_ParseMethod45 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
-		m_ParseMethod46 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Id);};
-		m_ParseMethod47 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S0);};
-		m_ParseMethod48 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "\t\r\n =]", string.Empty, null, "[^\t\r\n =\\]]");};
-		m_ParseMethod49 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "\t\r\n ]", string.Empty, null, "[^\t\r\n \\]]");};
-		m_ParseMethod50 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S);};
-		m_ParseMethod51 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, false, string.Empty, "\x0001\xFFFF", null, ".");};
+		m_ParseMethod38 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Id);};
+		m_ParseMethod39 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, ":");};
+		m_ParseMethod40 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Value);};
+		m_ParseMethod41 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.NotStrId);};
+		m_ParseMethod42 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Str1);};
+		m_ParseMethod43 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Str2);};
+		m_ParseMethod44 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.NotStrVal);};
+		m_ParseMethod45 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Str1);};
+		m_ParseMethod46 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.Str2);};
+		m_ParseMethod47 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "'\":}", string.Empty, null, "[^'\":}]");};
+		m_ParseMethod48 = (ParseMethod)delegate (State s, List<Result> r) {return DoRepetition(s, r, 0, 2147483647,
+				m_ParseMethod49);};
+		m_ParseMethod49 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, ":}", string.Empty, null, "[^:}]");};
+		m_ParseMethod50 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, true, "'\":}", string.Empty, null, "[^'\":}]");};
+		m_ParseMethod51 = (ParseMethod)delegate (State s, List<Result> r) {return DoRepetition(s, r, 0, 2147483647,
+				m_ParseMethod52);};
+		m_ParseMethod52 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, "}", string.Empty, null, "[^}]");};
+		m_ParseMethod53 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "\"");};
+		m_ParseMethod54 = (ParseMethod)delegate (State s, List<Result> r) {return DoRepetition(s, r, 0, 2147483647,
+				m_ParseMethod55);};
+		m_ParseMethod55 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, "\"", string.Empty, null, "[^\"]");};
+		m_ParseMethod56 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "\"");};
+		m_ParseMethod57 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "'");};
+		m_ParseMethod58 = (ParseMethod)delegate (State s, List<Result> r) {return DoRepetition(s, r, 0, 2147483647,
+				m_ParseMethod59);};
+		m_ParseMethod59 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, "'", string.Empty, null, "[^']");};
+		m_ParseMethod60 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "'");};
+		m_ParseMethod61 = (ParseMethod)delegate (State s, List<Result> r) {return DoParse(s, r, (int)NonTerminalEnum.S);};
+		m_ParseMethod62 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, false, string.Empty, "\x0001\xFFFF", null, ".");};
 
 
         OnCtorEpilog();
@@ -188,7 +207,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// String := [^{}]+
+	// String := [^[\\]]+
 	private State DoParseStringRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
@@ -236,19 +255,19 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// EscapeLeftTag := '{{'
+	// EscapeLeftTag := '[['
 	private State DoParseEscapeLeftTagRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
         List<Result> results = null;
 		
-			_state = DoParseLiteral(_state, null, "{{");
+			_state = DoParseLiteral(_state, null, "[[");
 		
 		if (_state.Parsed)
 		{
             ParserValue value = default(ParserValue);
         
-			value.TextValue = new NormalText{ Text = "{" };
+			value.TextValue = new NormalText{ Text = "[" };
 			
             if(null != _outResults)
                 _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
@@ -257,19 +276,19 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// LeftTag := '{'
+	// LeftTag := '['
 	private State DoParseLeftTagRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
         List<Result> results = null;
 		
-			_state = DoParseLiteral(_state, null, "{");
+			_state = DoParseLiteral(_state, null, "[");
 		
 		if (_state.Parsed)
 		{
             ParserValue value = default(ParserValue);
         
-			value.TextValue = new NormalText{ Text = "{" };
+			value.TextValue = new NormalText{ Text = "[" };
 			
             if(null != _outResults)
                 _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
@@ -278,19 +297,19 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// EscapeRightTag := '}}'
+	// EscapeRightTag := ']]'
 	private State DoParseEscapeRightTagRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
         List<Result> results = null;
 		
-			_state = DoParseLiteral(_state, null, "}}");
+			_state = DoParseLiteral(_state, null, "]]");
 		
 		if (_state.Parsed)
 		{
             ParserValue value = default(ParserValue);
         
-			value.TextValue = new NormalText{ Text = "}" };
+			value.TextValue = new NormalText{ Text = "]" };
 			
             if(null != _outResults)
                 _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
@@ -299,19 +318,19 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// RightTag := '}'
+	// RightTag := ']'
 	private State DoParseRightTagRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
         List<Result> results = null;
 		
-			_state = DoParseLiteral(_state, null, "}");
+			_state = DoParseLiteral(_state, null, "]");
 		
 		if (_state.Parsed)
 		{
             ParserValue value = default(ParserValue);
         
-			value.TextValue = new NormalText{ Text = "}" };
+			value.TextValue = new NormalText{ Text = "]" };
 			
             if(null != _outResults)
                 _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
@@ -320,7 +339,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// HyperText := '{' Attrs HyperWord '}'
+	// HyperText := '[' Attrs HyperWord ']'
 	private State DoParseHyperTextRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
@@ -390,13 +409,13 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// Attrs := Attr+
+	// Attrs := Attr*
 	private State DoParseAttrsRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
 		List<Result> results = new List<Result>();
 		
-			_state = DoRepetition(_state, results, 1, 2147483647,
+			_state = DoRepetition(_state, results, 0, 2147483647,
 			m_ParseMethod21);
 		
 		if (_state.Parsed)
@@ -412,7 +431,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// Attr := TagAttr / BracketAttr
+	// Attr := TagAttr / BraceAttr
 	private State DoParseAttrRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
@@ -459,7 +478,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// SimpleTag := '-' / [!@#$%&*+=/:?|]
+	// SimpleTag := '-' / [!@#$%&*+=\\:?|`~^]
 	private State DoParseSimpleTagRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
@@ -484,7 +503,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// SimpleTagValue := [^!@#$%&*+=/:?|{}[\t\r\n -]*
+	// SimpleTagValue := [^!@#$%&*+=\\:?|`~^{[\\]\t\r\n -]*
 	private State DoParseSimpleTagValueRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
@@ -508,8 +527,8 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// BracketAttr := S0 '[' AttrValue ']'
-	private State DoParseBracketAttrRule(State _state, List<Result> _outResults)
+	// BraceAttr := S0 '{' AttrValue '}'
+	private State DoParseBraceAttrRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
 		List<Result> results = new List<Result>();
@@ -554,7 +573,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// KeyValue := S0 Id S0 '=' S0 Value S0
+	// KeyValue := Id ':' Value
 	private State DoParseKeyValueRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
@@ -563,11 +582,7 @@ internal sealed partial class Parser
 			_state = DoSequence(_state, results,
 			m_ParseMethod38,
 			m_ParseMethod39,
-			m_ParseMethod40,
-			m_ParseMethod41,
-			m_ParseMethod42,
-			m_ParseMethod43,
-			m_ParseMethod44);
+			m_ParseMethod40);
 		
 		if (_state.Parsed)
 		{
@@ -582,16 +597,13 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// KeyNoValue := S0 Id S0
+	// KeyNoValue := Id
 	private State DoParseKeyNoValueRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
 		List<Result> results = new List<Result>();
 		
-			_state = DoSequence(_state, results,
-			m_ParseMethod45,
-			m_ParseMethod46,
-			m_ParseMethod47);
+			_state = DoParse(_state, results, (int)NonTerminalEnum.Id);
 		
 		if (_state.Parsed)
 		{
@@ -606,14 +618,16 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// Id := [^\t\r\n =\\]]+
+	// Id := NotStrId / Str1 / Str2
 	private State DoParseIdRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
         List<Result> results = null;
 		
-			_state = DoRepetition(_state, results, 1, 2147483647,
-			m_ParseMethod48);
+			_state = DoChoice(_state, results,
+			m_ParseMethod41,
+			m_ParseMethod42,
+			m_ParseMethod43);
 		
 		if (_state.Parsed)
 		{
@@ -621,7 +635,7 @@ internal sealed partial class Parser
         
 			string text = m_input.Substring(_startIndex, _state.Index - _startIndex);
 			
-			value.StringValue = text;
+			value.StringValue = text.Trim();
 			
 			if (null != text && null != _outResults)
 				_outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
@@ -630,14 +644,16 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// Value := [^\t\r\n \\]]+
+	// Value := NotStrVal / Str1 / Str2
 	private State DoParseValueRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
         List<Result> results = null;
 		
-			_state = DoRepetition(_state, results, 1, 2147483647,
-			m_ParseMethod49);
+			_state = DoChoice(_state, results,
+			m_ParseMethod44,
+			m_ParseMethod45,
+			m_ParseMethod46);
 		
 		if (_state.Parsed)
 		{
@@ -645,10 +661,96 @@ internal sealed partial class Parser
         
 			string text = m_input.Substring(_startIndex, _state.Index - _startIndex);
 			
-			value.StringValue = text;
+			value.StringValue = text.Trim();
 			
 			if (null != text && null != _outResults)
 				_outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
+		}
+			
+		return _state;
+	}
+
+	// NotStrId := [^'\":}] [^:}]*
+	private State DoParseNotStrIdRule(State _state, List<Result> _outResults)
+	{
+		int _startIndex = _state.Index;
+		List<Result> results = new List<Result>();
+		
+			_state = DoSequence(_state, results,
+			m_ParseMethod47,
+			m_ParseMethod48);
+		
+		if (_state.Parsed)
+		{
+			ParserValue value = results.Count > 0 ? results[0].Value : default(ParserValue);
+        
+            if(null != _outResults)
+                _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
+		}
+			
+		return _state;
+	}
+
+	// NotStrVal := [^'\":}] [^}]*
+	private State DoParseNotStrValRule(State _state, List<Result> _outResults)
+	{
+		int _startIndex = _state.Index;
+		List<Result> results = new List<Result>();
+		
+			_state = DoSequence(_state, results,
+			m_ParseMethod50,
+			m_ParseMethod51);
+		
+		if (_state.Parsed)
+		{
+			ParserValue value = results.Count > 0 ? results[0].Value : default(ParserValue);
+        
+            if(null != _outResults)
+                _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
+		}
+			
+		return _state;
+	}
+
+	// Str1 := '"' [^\"]* '"'
+	private State DoParseStr1Rule(State _state, List<Result> _outResults)
+	{
+		int _startIndex = _state.Index;
+		List<Result> results = new List<Result>();
+		
+			_state = DoSequence(_state, results,
+			m_ParseMethod53,
+			m_ParseMethod54,
+			m_ParseMethod56);
+		
+		if (_state.Parsed)
+		{
+			ParserValue value = results.Count > 0 ? results[0].Value : default(ParserValue);
+        
+            if(null != _outResults)
+                _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
+		}
+			
+		return _state;
+	}
+
+	// Str2 := ''' [^']* '''
+	private State DoParseStr2Rule(State _state, List<Result> _outResults)
+	{
+		int _startIndex = _state.Index;
+		List<Result> results = new List<Result>();
+		
+			_state = DoSequence(_state, results,
+			m_ParseMethod57,
+			m_ParseMethod58,
+			m_ParseMethod60);
+		
+		if (_state.Parsed)
+		{
+			ParserValue value = results.Count > 0 ? results[0].Value : default(ParserValue);
+        
+            if(null != _outResults)
+                _outResults.Add(new Result(this, _startIndex, _state.Index - _startIndex, m_input, ref value));
 		}
 			
 		return _state;
@@ -661,7 +763,7 @@ internal sealed partial class Parser
         List<Result> results = null;
 		
 			_state = DoRepetition(_state, results, 0, 2147483647,
-			m_ParseMethod50);
+			m_ParseMethod61);
 		
 		if (_state.Parsed)
 		{
@@ -704,7 +806,7 @@ internal sealed partial class Parser
 		List<Result> results = new List<Result>();
 		
 			_state = DoNAssert(_state, results,
-			m_ParseMethod51);
+			m_ParseMethod62);
 		
 		if (_state.Parsed)
 		{
@@ -1107,12 +1209,16 @@ internal sealed partial class Parser
 		TagAttr,
 		SimpleTag,
 		SimpleTagValue,
-		BracketAttr,
+		BraceAttr,
 		AttrValue,
 		KeyValue,
 		KeyNoValue,
 		Id,
 		Value,
+		NotStrId,
+		NotStrVal,
+		Str1,
+		Str2,
 		S0,
 		S,
 		EOF,
@@ -1170,6 +1276,17 @@ internal sealed partial class Parser
 	private ParseMethod m_ParseMethod49;
 	private ParseMethod m_ParseMethod50;
 	private ParseMethod m_ParseMethod51;
+	private ParseMethod m_ParseMethod52;
+	private ParseMethod m_ParseMethod53;
+	private ParseMethod m_ParseMethod54;
+	private ParseMethod m_ParseMethod55;
+	private ParseMethod m_ParseMethod56;
+	private ParseMethod m_ParseMethod57;
+	private ParseMethod m_ParseMethod58;
+	private ParseMethod m_ParseMethod59;
+	private ParseMethod m_ParseMethod60;
+	private ParseMethod m_ParseMethod61;
+	private ParseMethod m_ParseMethod62;
 
 
     private string m_input;

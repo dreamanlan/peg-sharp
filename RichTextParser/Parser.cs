@@ -127,7 +127,7 @@ internal sealed partial class Parser
 		m_ParseMethod61 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseRange(s, null, false, "_#@$%&.:", "azAZ09", null, "[_#@$%&.:a-zA-Z0-9]");};
 		m_ParseMethod62 = (ParseMethod)delegate (State s, List<Result> r) {return DoRepetition(s, r, 0, 2147483647,
 				m_ParseMethod63);};
-		m_ParseMethod63 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, "'\"<>=\t\r\n /", string.Empty, null, "[^'\"<>=\t\r\n /]");};
+		m_ParseMethod63 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, "<>=\t\r\n /", string.Empty, null, "[^<>=\t\r\n /]");};
 		m_ParseMethod66 = (ParseMethod)delegate (State s, List<Result> r) {return DoChoice(s, r,
 				m_ParseMethod64,
 				m_ParseMethod65);};
@@ -135,7 +135,7 @@ internal sealed partial class Parser
 		m_ParseMethod65 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseLiteral(s2, null, "-");};
 		m_ParseMethod67 = (ParseMethod)delegate (State s, List<Result> r) {return DoRepetition(s, r, 0, 2147483647,
 				m_ParseMethod68);};
-		m_ParseMethod68 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, "'\"<>=\t\r\n /", string.Empty, null, "[^'\"<>=\t\r\n /]");};
+		m_ParseMethod68 = (ParseMethod)delegate (State s2, List<Result> r2) {return DoParseRange(s2, null, true, "<>=\t\r\n /", string.Empty, null, "[^<>=\t\r\n /]");};
 		m_ParseMethod69 = (ParseMethod)delegate (State s, List<Result> r) {return DoParseLiteral(s, null, "\"");};
 		m_ParseMethod70 = (ParseMethod)delegate (State s, List<Result> r) {return DoRepetition(s, r, 0, 2147483647,
 				m_ParseMethod71);};
@@ -722,7 +722,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// NotStrId := [_#@$%&.:a-zA-Z0-9] [^'\"<>=\t\r\n /]*
+	// NotStrId := [_#@$%&.:a-zA-Z0-9] [^<>=\t\r\n /]*
 	private State DoParseNotStrIdRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
@@ -747,7 +747,7 @@ internal sealed partial class Parser
 		return _state;
 	}
 
-	// NotStrVal := ([_#@$%&+.:a-zA-Z0-9] / '-') [^'\"<>=\t\r\n /]*
+	// NotStrVal := ([_#@$%&+.:a-zA-Z0-9] / '-') [^<>=\t\r\n /]*
 	private State DoParseNotStrValRule(State _state, List<Result> _outResults)
 	{
 		int _startIndex = _state.Index;
