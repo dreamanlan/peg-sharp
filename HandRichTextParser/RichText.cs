@@ -5,6 +5,16 @@ using System.Text;
 
 namespace RichTextParser
 {
+    public sealed class IRichTextList : List<IRichText>
+    {
+        public IRichTextList() { }
+        public IRichTextList(IEnumerable<IRichText> coll) : base(coll) { }
+    }
+    public sealed class HyperTextAttrList : List<HyperTextAttr>
+    {
+        public HyperTextAttrList() { }
+        public HyperTextAttrList(IEnumerable<HyperTextAttr> coll) : base(coll) { }
+    }
     public enum RichTextType
     {
         Normal = 0,
@@ -14,7 +24,7 @@ namespace RichTextParser
     {
         RichTextType Type { get; }
     }
-    public class NormalText : IRichText
+    public sealed class NormalText : IRichText
     {
         public RichTextType Type { get { return RichTextType.Normal; } }
 
@@ -25,7 +35,7 @@ namespace RichTextParser
 
         private string m_Text = string.Empty;
     }
-    public class HyperTextAttr
+    public sealed class HyperTextAttr
     {
         public string Key {
             get { return m_Key; }
@@ -39,26 +49,33 @@ namespace RichTextParser
         private string m_Key = string.Empty;
         private string m_Value = string.Empty;
     }
-    public class HyperText : IRichText
+    public sealed class HyperText : IRichText
     {
         public RichTextType Type { get { return RichTextType.Hyper; } }
 
-        public List<HyperTextAttr> Attrs {
+        public HyperTextAttrList Attrs {
             get { return m_Attrs; }
         }
-        public List<IRichText> Texts {
+        public IRichTextList Texts {
             get { return m_Texts; }
         }
 
-        private List<HyperTextAttr> m_Attrs = new List<HyperTextAttr>();
-        private List<IRichText> m_Texts = new List<IRichText>();
+        private HyperTextAttrList m_Attrs = new HyperTextAttrList();
+        private IRichTextList m_Texts = new IRichTextList();
     }
-    public class RichText
+    public sealed class RichTextParser
     {
-        public List<IRichText> Texts {
+        public IRichTextList Texts
+        {
             get { return m_Texts; }
         }
+        public void Parse(string txt)
+        {
+            var val = m_Parser.Parse(txt);
+            m_Texts = val.TextValues;
+        }
 
-        private List<IRichText> m_Texts = new List<IRichText>();
+        private IRichTextList m_Texts = null;
+        private Parser m_Parser = new Parser();
     }
 }
